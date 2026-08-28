@@ -1,0 +1,25 @@
+# AI FORENSIC INVESTIGATION SYSTEM
+
+## Abstract
+
+The rapid expansion of CCTV surveillance networks has made manual review of security footage an increasingly impractical and error-prone task. Security personnel often face the challenge of sifting through hundreds of hours of video to identify critical events, resulting in delayed incident response and missed evidence. This project presents an **AI Forensic Investigation System** — an intelligent, GenAI-powered surveillance investigation assistant that enables security personnel to investigate CCTV footage using **natural-language queries** instead of manually reviewing large volumes of video.
+
+The system integrates multiple layers of artificial intelligence to transform raw surveillance video into a searchable, structured, and evidence-grounded knowledge store. The core pipeline begins with **asynchronous video ingestion**, where uploaded CCTV footage is decoded using FFmpeg and processed through a multi-stage pipeline comprising **scene detection** (PySceneDetect), **clip segmentation**, **keyframe extraction**, and **object detection and tracking** using YOLOv8 combined with an IoU/ByteTrack-style tracker. Detected objects are assigned visual tracking identifiers (e.g., Person-001) without performing facial recognition or biometric identification, ensuring privacy compliance.
+
+The processed video data is then enriched through a **Video RAG (Retrieval-Augmented Generation)** pipeline. Clip-level semantic embeddings are generated using state-of-the-art language models and indexed in **Qdrant**, a vector database, enabling hybrid retrieval that combines semantic similarity search with temporal, object, and event-based metadata filters. A **multimodal Vision-Language Model (VLM)** generates semantic descriptions of key clips and frames, further enhancing the system's ability to respond to nuanced natural-language queries.
+
+An **Investigation Agent**, built on LangGraph with tool-calling capabilities, orchestrates the end-to-end investigative workflow. The agent coordinates multiple tools — including video retrieval, evidence inspection, timeline construction, policy matching, and verification — to generate comprehensive, evidence-backed findings. Each finding is assigned an explicit semantic status (OBSERVED, INFERRED, POLICY-ASSESSED, VERIFIED, or UNKNOWN) to ensure transparency and prevent hallucinated conclusions from being presented as facts.
+
+The system also incorporates a **Security Policy RAG** module, which ingests organizational security documents (PDF/DOCX), chunks and embeds them, and retrieves relevant policies to assess whether observed behavior is consistent with established security protocols. An **Evidence Verification** engine cross-references AI-generated claims against source video timestamps, detection metadata, and retrieved policy text to validate accuracy before presenting findings.
+
+A **Timeline Reasoning** module reconstructs chronological sequences of observable events across multiple clips and videos, providing investigators with a coherent narrative of incidents. The final output is delivered through a **structured incident report** that includes evidence-supported findings, verification status, temporal data, and clip/frame references, all subject to human review before finalization.
+
+The system is built on a modern, modular technology stack: **Next.js 14** (TypeScript, Tailwind CSS) for the frontend dashboard; **FastAPI** (Python, Pydantic) for the backend API and orchestration; **PostgreSQL 15** with SQLAlchemy and Alembic for relational data persistence; **MinIO** (S3-compatible) for immutable object storage of evidence files; **Qdrant** for vector-based semantic retrieval; and **Docker Compose** for containerized deployment. The architecture is designed to be asynchronous and non-blocking — video processing runs in background workers while the API remains responsive.
+
+Key design principles include **no facial recognition** or identity claims, **immutable original evidence** storage, **never inventing timestamps** (all derived from source video metadata), and **graceful degradation** when AI models are unavailable (producing fewer results rather than fabricated output). Every AI-generated claim is traceable to its source evidence, and the system mandates human review before any report is finalized, positioning it as an **investigation-assistance tool** rather than an autonomous security system.
+
+The system demonstrates the feasibility of combining computer vision, multimodal generative AI, retrieval-augmented generation, agentic AI workflows, and evidence verification into a cohesive platform that significantly reduces the time and effort required for forensic video investigation while maintaining evidentiary integrity and transparency.
+
+---
+
+**Keywords:** AI Forensic Investigation, CCTV Analysis, Generative AI, Video RAG, Retrieval-Augmented Generation, Natural Language Processing, Computer Vision, YOLO Object Detection, Agentic AI, LangGraph, Evidence Verification, Multimodal AI, Surveillance Investigation, FastAPI, Next.js, Qdrant, Vector Database
