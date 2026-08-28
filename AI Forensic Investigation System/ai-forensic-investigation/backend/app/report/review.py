@@ -41,7 +41,7 @@ def _get_report_or_404(db: Session, report_id: int) -> models.Report:
     return report
 
 
-def _audit(db: Session, user_id: Optional[int], report_id: int, action: str, details: str) -> None:
+def _audit(db: Session, action: str, user_id: Optional[int], report_id: int, details: str) -> None:
     record_audit(
         db, action, user_id=user_id,
         entity_type="report", entity_id=report_id, details=details,

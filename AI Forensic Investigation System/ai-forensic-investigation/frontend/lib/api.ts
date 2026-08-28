@@ -311,7 +311,118 @@ export function getUser(): User | null {
 
 export function setUser(user: User) {
   localStorage.setItem("user", JSON.stringify(user));
-}export class ApiError extends Error {
+}
+
+// ---- Part 4: Evidence workspace + reports ----
+
+export type EvidenceClip = {
+  id: number;
+  public_id: string;
+  video_id: number;
+  camera_id?: number | null;
+  camera_name?: string | null;
+  start_time: number;
+  end_time: number;
+  description?: string | null;
+  storage_path?: string | null;
+  detections: {
+    id: number;
+    label: string;
+    timestamp?: number | null;
+    tracking_id?: string | null;
+    detection_confidence?: number | null;
+  }[];
+};
+
+export type EvidenceSourceClip = {
+  id: number;
+  public_id: string;
+  start_time: number;
+  end_time: number;
+  storage_path?: string | null;
+};
+
+export type EvidenceClaimLink = {
+  evidence_id: number;
+  clip_id?: number | null;
+  clip_public_id?: string | null;
+  video_id?: number | null;
+  timestamp?: number | null;
+  evidence_type?: string | null;
+  relevance_score?: number | null;
+  source_clip?: EvidenceSourceClip | null;
+};
+
+export type PolicyReference = {
+  finding_id: number;
+  policy_id?: number | null;
+  document_name?: string | null;
+  description?: string | null;
+  status?: string | null;
+};
+
+export type EvidenceClaimRow = {
+  claim_id: number;
+  investigation_id: number;
+  claim_text: string;
+  claim_type: string;
+  status: string;
+  confidence?: number | null;
+  created_at?: string | null;
+  evidence: EvidenceClaimLink[];
+  verification?: {
+    result?: string | null;
+    reason?: string | null;
+    verifier_version?: string | null;
+    checks?: Record<string, unknown> | null;
+  } | null;
+  policy_references: PolicyReference[];
+};
+
+export type Report = {
+  id: number;
+  investigation_id: number;
+  title: string;
+  status: string;
+  is_final: boolean;
+  version: number;
+  storage_path?: string | null;
+  file_format?: string | null;
+  generated_by_user_id?: number | null;
+  reviewed_by_user_id?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  investigation_title?: string | null;
+};
+
+export type ReviewDecision = {
+  id: number;
+  report_id: number;
+  claim_id?: number | null;
+  action: string;
+  original_text?: string | null;
+  edited_text?: string | null;
+  note?: string | null;
+  reviewer_user_id?: number | null;
+  reviewer_name?: string | null;
+  reviewed_at?: string | null;
+};
+
+export type ReportDetail = Report & {
+  content?: Record<string, unknown> | null;
+  review_decisions?: ReviewDecision[];
+};
+
+export type ReportAuditEntry = {
+  id: number;
+  action: string;
+  user_id: number | null;
+  user_name?: string | null;
+  details?: string | null;
+  created_at?: string | null;
+};
+
+export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
     super(message);
@@ -448,4 +559,43 @@ export const api = {
       body: JSON.stringify(data),
     }),
   claims: () => request<Claim[]>("/claims"),
+
+  // ---- Part 4: Evidence workspace ----
+
+  evidenceClaims: () => request<EvidenceClaimRow[]>("/evidence/claims"),
+  evidenceClips: (videoId?: number) =>
+    request<EvidenceClip[]>(
+      `/evidence/clips${videoId ? `?video_id=${videoId}` : ""}`
+    ),
+
+  // ---- Part 4: Reports ----
+
+  reports: () => request<Report[]>("/reports"),
+  report: (id: number) => request<ReportDetail>(`/reports/${id}`),
+  generateReport: (investigationId: number, title?: string) =>
+    request<ReportDetail>(`/investigations/${investigationId}/report/generate`, {
+      method: "POST",
+      body: JSON.stringify(title ? { title } : {}),
+    }),
+  submitReport: (id: number) =>
+    request<Report>(`/reports/${id}/submit`, { method: "POST" }),
+  reviewReport: (id: number, decision: string, note?: string) =>
+    request<Report>(`/reports/${id}/review`, {
+      method: "POST",
+      body: JSON.stringify({ decision, note }),
+    }),
+  finalizeReport: (id: number) =>
+    request<Report>(`/reports/${id}/finalize`, { method: "POST" }),
+  reviewClaim: (reportId: number, claimId: number, data: {
+    action: string;
+    edited_text?: string;
+    note?: string;
+  }) =>
+    request<ReviewDecision>(`/reports/${reportId}/claims/${claimId}/review`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  reportAudit: (id: number) => request<ReportAuditEntry[]>(`/reports/${id}/audit`),
+  reportFileUrl: (id: number, download = false) =>
+    `${API_URL}/reports/${id}/file?download=${download}`,
 };

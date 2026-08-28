@@ -17,6 +17,8 @@ out/
 
 # Data (uploaded videos, clips, frames - not source)
 data/
+!data/evaluation/
+!data/evaluation/benchmark.jsonl
 models/*.pt
 
 # Test artifacts
