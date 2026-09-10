@@ -1,0 +1,6 @@
+MinIO not available, using local filesystem storage: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: / (Caused by NewConnectionError("HTTPConnection(host='localhost', port=9000): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it"))
+INFO:     Started server process [3100]
+INFO:     Waiting for application startup.
+INFO:app.main:MinIO buckets ensured
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

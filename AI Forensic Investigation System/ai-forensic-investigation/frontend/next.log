@@ -1,0 +1,34 @@
+
+> ai-forensic-frontend@1.0.0 dev
+> next dev
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 4.7s
+ ○ Compiling / ...
+ ✓ Compiled / in 5.3s (465 modules)
+ GET / 200 in 5660ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 5.9s (535 modules)
+ GET / 200 in 77ms
+ ✓ Compiled /register in 277ms (529 modules)
+ GET / 200 in 87ms
+ GET / 200 in 54ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 842ms (553 modules)
+ ○ Compiling /videos ...
+ ✓ Compiled /videos in 522ms (565 modules)
+ ✓ Compiled /investigate in 438ms (593 modules)
+ ✓ Compiled /investigations in 337ms (605 modules)
+ ✓ Compiled /evidence in 329ms (615 modules)
+ ✓ Compiled /policies in 360ms (627 modules)
+ ✓ Compiled /reports in 321ms (635 modules)
+ ✓ Compiled /settings in 364ms (653 modules)
