@@ -200,6 +200,283 @@ def _simulate_vision_describe(clip_context: dict[str, Any]) -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Live frame observation (Phase 4)
+# ---------------------------------------------------------------------------
+
+P3_OBSERVATION_CLASSES = ("OBSERVED", "INFERRED", "UNKNOWN")
+
+MAX_OBSERVATION_STATEMENTS = 32
+
+
+def _resolve_mode(provider_override: Optional[str] = None) -> str:
+    """Resolve the active provider mode, allowing per-call override."""
+    mode = (provider_override or settings.LLM_PROVIDER or "").strip().lower()
+    if mode == SIMULATION_PROVIDER:
+        return SIMULATION_PROVIDER
+    if mode:
+        return mode
+    return SIMULATION_PROVIDER
+
+
+def vision_observe_frames(
+    prepared_frames: list[dict],
+    observe_context: dict[str, Any],
+    provider_override: Optional[str] = None,
+) -> dict[str, Any]:
+    """Return a grounded structured observation of live frames.
+
+    ``prepared_frames`` is a list of preprocessed JPEG frames with keys ``data``
+    (JPEG bytes) plus passive metadata (``frame_id``, ``sequence``,
+    ``timestamp``, ``width``, ``height``). ``observe_context`` carries ONLY
+    observable metadata already known to the system (camera/session ids, source
+    frame refs, detections, active tracks, events, window bounds).
+
+    Contract of the returned dict (later normalised against the Phase 4
+    schema):
+        {"summary": str,
+         "statements": [{"statement", "classification", "confidence", "basis"}],
+         "notes": [str],
+         "model": str}
+
+    ``classification`` is one of OBSERVED / INFERRED / UNKNOWN. The model is
+    told never to infer human intent, identity, or names, and never to invent
+    timestamps or metadata. In simulation mode output is derived deterministically
+    from the supplied metadata and is clearly labelled.
+    """
+    mode = _resolve_mode(provider_override)
+    if mode != SIMULATION_PROVIDER and available():
+        return _real_observe_frames(prepared_frames, observe_context, provider_override)
+    return _simulate_observe_frames(observe_context, provider_override)
+
+
+def _real_observe_frames(
+    prepared_frames: list[dict],
+    observe_context: dict[str, Any],
+    provider_override: Optional[str] = None,
+) -> dict[str, Any]:
+    import base64
+
+    if not prepared_frames:
+        return _simulate_observe_frames(observe_context, provider_override)
+
+    images_payload = []
+    for frame in prepared_frames[:MAX_VISION_FRAMES]:
+        data = frame.get("data")
+        if not data:
+            continue
+        b64 = base64.b64encode(data).decode("utf-8")
+        images_payload.append(
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+        )
+    if not images_payload:
+        return _simulate_observe_frames(observe_context, provider_override)
+
+    user_content = [
+        {
+            "type": "text",
+            "text": (
+                "You are a forensic video analyst examining LIVE camera frames. "
+                "Describe ONLY observable evidence. Classify every statement as "
+                "OBSERVED (directly visible in the frames or given metadata), "
+                "INFERRED (reasoned from the given metadata, clearly labelled), or "
+                "UNKNOWN (not determinable). "
+                "NEVER infer human intent, names, identity, or perform facial or "
+                "biometric identification. NEVER invent timestamps, IDs, or metadata "
+                "not provided. "
+                f"Known metadata (only observable facts): {json.dumps(observe_context)} "
+                "Return STRICT JSON with keys: summary (string), statements (array of "
+                "{statement: string, classification: 'OBSERVED'|'INFERRED'|'UNKNOWN', "
+                "confidence: number 0-1, basis: array of source ref strings}), "
+                "notes (array of strings)."
+            ),
+        },
+        *images_payload,
+    ]
+    messages = [{"role": "user", "content": user_content}]
+    try:
+        raw = _chat_completion(
+            messages,
+            settings.VISION_MODEL,
+            temperature=0.0,
+            max_tokens=1000,
+        )
+        parsed = _parse_json_object(raw)
+        if parsed is not None:
+            return _normalize_observation(parsed, settings.VISION_MODEL)
+        return _simulate_observe_frames(observe_context, provider_override)
+    except ProviderError as exc:
+        logger.warning("VLM observation unavailable (%s); using simulation", exc)
+        return _simulate_observe_frames(observe_context, provider_override)
+
+
+def _normalize_observation(parsed: dict, model: str) -> dict[str, Any]:
+    """Coerce raw VLM JSON into the observation contract with guardrails."""
+    statements = []
+    for item in (parsed.get("statements") or [])[:MAX_OBSERVATION_STATEMENTS]:
+        if not isinstance(item, dict):
+            continue
+        cls = str(item.get("classification", "")).strip().upper()
+        if cls not in P3_OBSERVATION_CLASSES:
+            cls = "UNKNOWN"
+        try:
+            confidence = float(item.get("confidence", 0.0))
+        except (TypeError, ValueError):
+            confidence = 0.0
+        confidence = max(0.0, min(1.0, confidence))
+        statement = str(item.get("statement", "")).strip()
+        if not statement:
+            continue
+        basis = item.get("basis") or []
+        basis = [str(b) for b in basis if isinstance(b, (str, int, float))]
+        statements.append(
+            {
+                "statement": statement,
+                "classification": cls,
+                "confidence": confidence,
+                "basis": basis,
+            }
+        )
+    if not statements:
+        statements = [
+            {
+                "statement": "The model returned no statements; content could not be verified.",
+                "classification": "UNKNOWN",
+                "confidence": 0.0,
+                "basis": [],
+            }
+        ]
+    notes_in = parsed.get("notes") or []
+    notes = [str(n) for n in notes_in if isinstance(n, (str, int, float))]
+    return {
+        "summary": str(parsed.get("summary", "")).strip(),
+        "statements": statements,
+        "notes": notes,
+        "model": model,
+    }
+
+
+def _simulate_observe_frames(
+    observe_context: dict[str, Any],
+    provider_override: Optional[str] = None,
+) -> dict[str, Any]:
+    """Deterministic, evidence-derived observation for simulation mode."""
+    camera = observe_context.get("camera_id", "?")
+    camera_name = observe_context.get("camera_name", "")
+    session = observe_context.get("session_id", "")
+    frames_ref = observe_context.get("source_frames") or []
+    detections = observe_context.get("detections") or []
+    tracks = observe_context.get("active_tracks") or []
+    event = observe_context.get("event") or {}
+    window_start = observe_context.get("window_start")
+    window_end = observe_context.get("window_end")
+
+    statements: list[dict] = []
+    basis_ctx = [f"camera:{camera}"]
+    if session:
+        basis_ctx.append(f"session:{session}")
+
+    if detections or tracks or event:
+        by_label: dict[str, int] = {}
+        for d in detections:
+            lbl = d.get("label") or d.get("class_name") or ""
+            if lbl:
+                by_label[lbl] = by_label.get(lbl, 0) + 1
+                frame_ref = d.get("frame_id")
+                basis = list(basis_ctx)
+                if frame_ref is not None:
+                    basis.append(f"frame:{frame_ref}")
+                statements.append(
+                    {
+                        "statement": f"Detected {lbl} at frame {frame_ref} (confidence {float(d.get('confidence', 0.0)):.2f}).",
+                        "classification": "OBSERVED",
+                        "confidence": max(0.0, min(1.0, float(d.get("confidence", 0.0)))),
+                        "basis": basis,
+                    }
+                )
+            break  # only leading detection frame drives the label summary
+
+        for t in tracks:
+            tid = t.get("tracking_id")
+            lbl = t.get("label") or "object"
+            frame_ref = t.get("frame_id")
+            basis = list(basis_ctx)
+            if tid:
+                basis.append(f"track:{tid}")
+            if frame_ref is not None:
+                basis.append(f"frame:{frame_ref}")
+            statements.append(
+                {
+                    "statement": f"Track {tid} ({lbl}) was active at frame {frame_ref}.",
+                    "classification": "OBSERVED",
+                    "confidence": max(0.0, min(1.0, float(t.get("confidence", 0.0) or 0.0))) or 0.6,
+                    "basis": basis,
+                }
+            )
+
+        if event:
+            etype = event.get("event_type") or ""
+            eid = event.get("event_id")
+            tid = event.get("tracking_id")
+            frame_ref = event.get("frame_index")
+            basis = list(basis_ctx)
+            if eid:
+                basis.append(f"event:{eid}")
+            if tid:
+                basis.append(f"track:{tid}")
+            if frame_ref is not None:
+                basis.append(f"frame:{frame_ref}")
+            if etype:
+                statements.append(
+                    {
+                        "statement": f"Tracking event '{etype}' recorded for track {tid} at frame {frame_ref}.",
+                        "classification": "OBSERVED",
+                        "confidence": 0.95,
+                        "basis": basis,
+                    }
+                )
+            stationary = event.get("metadata", {}).get("stationary_seconds")
+            if etype == "object_stopped" and stationary is not None:
+                statements.append(
+                    {
+                        "statement": f"Track {tid} was stationary for {float(stationary):.1f}s, which may indicate loitering or abandonment.",
+                        "classification": "INFERRED",
+                        "confidence": 0.55,
+                        "basis": basis,
+                    }
+                )
+
+    if not statements:
+        statements = [
+            {
+                "statement": "No objects were detected in the selected frames; visual content could not be verified.",
+                "classification": "UNKNOWN",
+                "confidence": 0.0,
+                "basis": basis_ctx,
+            }
+        ]
+
+    n_frames = len(frames_ref)
+    window_txt = ""
+    if window_start is not None and window_end is not None:
+        window_txt = f" in window [{window_start:.1f}s, {window_end:.1f}s]"
+    summary = (
+        "[SIMULATED VLM] "
+        f"Camera {camera}{' (' + camera_name + ')' if camera_name else ''}: "
+        f"{n_frames} source frame(s){window_txt}; "
+        f"{len(detections)} detection(s), {len(tracks)} active track(s)."
+    )
+    return {
+        "summary": summary,
+        "statements": statements,
+        "notes": [
+            "Simulation provider: deterministic fallback. No real VLM was queried.",
+            "Statements are derived from detection/tracking metadata already present in the system.",
+        ],
+        "model": f"simulation:{provider_override or settings.LLM_PROVIDER or 'default'}",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Structured JSON parsing helper (robust against model wrappers)
 # ---------------------------------------------------------------------------
 

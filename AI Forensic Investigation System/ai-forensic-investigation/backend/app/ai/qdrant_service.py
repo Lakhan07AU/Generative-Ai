@@ -16,11 +16,26 @@ from __future__ import annotations
 
 import logging
 import math
+import uuid
 from typing import Any, Optional
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _canonical_point_id(point_id: Any) -> str:
+    """Qdrant only accepts unsigned integers or UUIDs as point ids. Evidence ids
+    like ``EVD-xxxx`` are mapped to a stable UUID5 so the real backend accepts
+    them; the in-memory fallback keeps the original string."""
+    raw = str(point_id)
+    if raw.lstrip("-").isdigit():
+        return raw
+    try:
+        uuid.UUID(raw)
+        return raw
+    except (ValueError, AttributeError, TypeError):
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, raw))
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -141,7 +156,7 @@ class QdrantService:
 
             self._client.upsert(
                 collection_name=collection,
-                points=[qm.PointStruct(id=str(point_id), vector=vector, payload=payload)],
+                points=[qm.PointStruct(id=_canonical_point_id(point_id), vector=vector, payload=payload)],
             )
         else:
             self._store(collection).upsert({"id": str(point_id), "vector": vector, "payload": payload})
@@ -193,9 +208,11 @@ class QdrantService:
     def delete(self, collection: str, point_id: Any) -> None:
         self.ensure_collections()
         if self._backend == "qdrant":
+            from qdrant_client.http import models as qm
+
             self._client.delete(
                 collection_name=collection,
-                points_selector=qm.PointIdsList(points=[str(point_id)]),
+                points_selector=qm.PointIdsList(points=[_canonical_point_id(point_id)]),
             )
         else:
             self._store(collection).delete(point_id)

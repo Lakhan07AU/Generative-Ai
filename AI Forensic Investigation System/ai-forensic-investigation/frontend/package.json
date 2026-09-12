@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "dev:https": "node server.https.js",
     "lint": "next lint"
   },
   "dependencies": {

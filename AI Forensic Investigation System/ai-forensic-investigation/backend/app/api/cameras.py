@@ -28,6 +28,8 @@ def create_camera(
         camera_name=payload.camera_name,
         location=payload.location,
         description=payload.description,
+        camera_type=payload.camera_type or "CCTV",
+        stream_source=payload.stream_source,
         created_by_user_id=current_user.id,
     )
     db.add(camera)
