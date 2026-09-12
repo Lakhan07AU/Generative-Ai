@@ -397,7 +397,7 @@ def build_report_sections(
 def _render_markdown(report: Dict[str, Any]) -> str:
     lines = [f"# {report['report_title']}", ""]
     for sec in report["sections"]:
-        lines.append(f"## {sec['title']}", "")
+        lines.append(f"## {sec['title']}")
         content = sec["content"]
 
         def dump(obj, depth=0):

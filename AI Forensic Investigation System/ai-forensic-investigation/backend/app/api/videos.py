@@ -233,8 +233,8 @@ def enrich_video(
     video = db.query(models.Video).filter(models.Video.id == video_id).first()
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
-    if video.status not in ("COMPLETED",):
-        raise HTTPException(status_code=409, detail="Video must be COMPLETED before enrichment")
+    if video.status not in ("READY", "COMPLETED"):
+        raise HTTPException(status_code=409, detail="Video must be READY or COMPLETED before enrichment")
 
     jobs = db.query(models.ProcessingJob).filter(
         models.ProcessingJob.video_id == video_id,

@@ -120,9 +120,25 @@ class DetectionModel:
     def __init__(self, model_path: str):
         self.model = None
         try:
-            from ultralytics import YOLO
+            import torch
 
-            self.model = YOLO(model_path)
+            # torch >= 2.6 defaults torch.load(weights_only=True), which breaks
+            # ultralytics <= 8.2.x checkpoint loading. The model weights come
+            # from the trusted official Ultralytics distribution (yolov8n.pt),
+            # so disabling weights_only is safe here.
+            _orig_load = torch.load
+
+            def _load_weights_only_false(*args, **kwargs):
+                kwargs.setdefault("weights_only", False)
+                return _orig_load(*args, **kwargs)
+
+            torch.load = _load_weights_only_false
+            try:
+                from ultralytics import YOLO
+
+                self.model = YOLO(model_path)
+            finally:
+                torch.load = _orig_load
         except Exception:
             self.model = None
 

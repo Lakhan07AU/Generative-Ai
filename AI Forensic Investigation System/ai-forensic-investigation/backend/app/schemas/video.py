@@ -7,6 +7,8 @@ class CameraCreate(BaseModel):
     camera_name: str
     location: Optional[str] = None
     description: Optional[str] = None
+    camera_type: Optional[str] = "CCTV"  # CCTV | MOBILE | OTHER
+    stream_source: Optional[str] = None
 
 
 class CameraOut(BaseModel):
@@ -14,6 +16,10 @@ class CameraOut(BaseModel):
     camera_name: str
     location: Optional[str] = None
     description: Optional[str] = None
+    camera_type: Optional[str] = "CCTV"
+    stream_source: Optional[str] = None
+    is_live: bool = False
+    stream_status: str = "OFFLINE"
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

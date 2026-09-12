@@ -1,0 +1,835 @@
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\page.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\app\\page.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\pages\_document.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\pages\\_document.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js:1:8532
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js:1:8573)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderErrorToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:2097:30)
+    at async pipe.req.req (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:2063:30)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:368:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\app\\_not-found\\page.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js:1:8532
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js:1:8573)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderErrorToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:2097:30)
+    at async pipe.req.req (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:2063:30)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:368:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\app\\_not-found\\page.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js:1:8532
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js:1:8573)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderErrorToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:2097:30)
+    at async pipe.req.req (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:2063:30)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:368:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\app\\_not-found\\page.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ]
+}
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\cache\webpack\client-development-fallback\0.pack.gz'
+ ⨯ Error: Cannot find module './819.js'
+Require stack:
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\_not-found\page.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\build\utils.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-middleware.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js
+- D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1517:15)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:55:36
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1071:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1095:10)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1122:12)
+    at Module._load (node:internal/modules/cjs/loader:1294:5)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at __webpack_require__.f.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:198:28)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:111:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:110:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\webpack-runtime.js:162:22)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:721
+    at Object.<anonymous> (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\.next\server\app\live\page.js:46:769)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1617:12)
+    at mod.require (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require-hook.js:65:28)
+    at require (node:internal/modules/helpers:153:16)
+    at requirePage (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\require.js:109:84)
+    at D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:84
+    at async loadComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:710:36)
+    at async DevServer.findPageComponents (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1917:24)
+    at async DevServer.renderToResponseImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:1969:32)
+    at async DevServer.pipeImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:920:25)
+    at async NextNodeServer.handleCatchallRenderRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\next-server.js:272:17)
+    at async DevServer.handleRequestImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\base-server.js:816:17)
+    at async D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+    at async Span.traceAsyncFn (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\trace\trace.js:154:20)
+    at async DevServer.handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+    at async invokeRender (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:174:21)
+    at async handleRequest (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:353:24)
+    at async requestHandlerImpl (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\router-server.js:377:13)
+    at async Server.requestListener (D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\frontend\node_modules\next\dist\server\lib\start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\webpack-runtime.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\.next\\server\\app\\_not-found\\page.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\require.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\load-components.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\build\\utils.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+    'D:\\Github\\Generative-Ai\\AI Forensic Investigation System\\ai-forensic-investigation\\frontend\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+  ],
+  page: '/live'
+}

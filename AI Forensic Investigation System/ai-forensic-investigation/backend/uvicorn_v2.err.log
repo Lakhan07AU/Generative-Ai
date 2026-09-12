@@ -1,0 +1,83 @@
+INFO:     Started server process [9800]
+INFO:     Waiting for application startup.
+INFO:app.main:MinIO buckets ensured
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:app.live.video_feeder:Video file feeder started camera=8 file=D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\backend\data\demo_investigation\videos\demo_video_02_street_persons_bikes.mp4
+INFO:app.detection.engine:Loaded YOLO model path=yolov8n.pt device=cpu imgsz=640 classes=80 (load 156 ms)
+INFO:app.live.manager:Tracking pipeline started camera=8
+INFO:app.vlm.session:VLM session started camera=8
+INFO:app.live.manager:VLM session started camera=8
+INFO:app.live.manager:Evidence capture started camera=8
+INFO:app.live.manager:Detection pipeline started camera=8 transport=file
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:app.live.video_feeder:Video file feeder reached EOF camera=8
+INFO:app.live.video_feeder:Video file feeder stopped camera=8
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:app.live.video_feeder:Video file feeder started camera=8 file=D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\backend\data\demo_investigation\videos\demo_video_02_street_persons_bikes.mp4
+INFO:app.live.manager:Tracking pipeline started camera=8
+INFO:app.vlm.session:VLM session started camera=8
+INFO:app.live.manager:VLM session started camera=8
+INFO:app.live.manager:Evidence capture started camera=8
+INFO:app.live.manager:Detection pipeline started camera=8 transport=file
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: PUT http://localhost:6333/collections/video_evidence/points?wait=true "HTTP/1.1 200 OK"
+INFO:app.live.video_feeder:Video file feeder reached EOF camera=8
+INFO:app.live.video_feeder:Video file feeder stopped camera=8
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+INFO:httpx:HTTP Request: POST http://localhost:6333/collections/video_evidence/points/search "HTTP/1.1 200 OK"

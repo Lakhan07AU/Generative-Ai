@@ -16,6 +16,9 @@ os.environ.setdefault("SECRET_KEY", "test_secret_key")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
 os.environ.setdefault("DATABASE_URL", f"sqlite:///{TEST_DB_FILE}")
+# Detection is disabled by default so the suite never loads the YOLO model.
+# Detection tests opt in by patching settings / building a fake engine.
+os.environ.setdefault("YOLO_DETECTION_ENABLED", "false")
 
 # Make backend importable
 BACKEND_DIR = os.path.join(os.path.dirname(__file__), "..", "backend")
@@ -56,15 +59,68 @@ def db():
 
 
 @pytest.fixture(autouse=True)
+def _reset_live():
+    """Reset the in-memory live session manager before/after each test and stop
+    any simulation feeder threads so tests are independent."""
+    from app.live.manager import manager
+
+    for runtime in manager.active_sessions():
+        if getattr(runtime, "simulation", None) is not None:
+            runtime.simulation.stop()
+            runtime.simulation = None
+    manager.clear()
+    yield
+    for runtime in manager.active_sessions():
+        if getattr(runtime, "simulation", None) is not None:
+            runtime.simulation.stop()
+            runtime.simulation = None
+    manager.clear()
+
+
+@pytest.fixture
+def reviewer_headers(client):
+    """Register + login a REVIEWER (no live-stream privileges)."""
+    email = "reviewer@test.com"
+    client.post(
+        "/auth/register",
+        json={"email": email, "name": "Reviewer", "password": "password123", "role": "REVIEWER"},
+    )
+    res = client.post("/auth/login", json={"email": email, "password": "password123"})
+    token = res.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
 def _reset_qdrant():
-    """Reset the (offline in-memory) Qdrant singleton before every test so tests
-    are independent of one another."""
+    """Reset the Qdrant singleton to the deterministic in-memory fallback before
+    every test so tests are independent and never depend on a live Qdrant."""
     try:
         from app.ai.qdrant_service import qdrant
 
         qdrant._client = None
-        qdrant._backend = None
+        qdrant._backend = "memory"
         qdrant._mem = {}
+    except Exception:  # noqa: BLE001
+        pass
+
+
+@pytest.fixture(autouse=True)
+def _reset_evidence():
+    """Stop/clear the global evidence index worker before/after each test so
+    background indexing never leaks across tests."""
+    try:
+        from app.evidence.indexer import evidence_indexer
+
+        evidence_indexer.stop(timeout=2)
+        evidence_indexer.clear()
+    except Exception:  # noqa: BLE001
+        pass
+    yield
+    try:
+        from app.evidence.indexer import evidence_indexer
+
+        evidence_indexer.stop(timeout=2)
+        evidence_indexer.clear()
     except Exception:  # noqa: BLE001
         pass
 
