@@ -160,13 +160,21 @@ export default function InvestigationDetailPage({
               <h1 className="text-2xl font-bold text-navy">{investigation.title}</h1>
               <p className="text-sm text-slate-500">{investigation.query}</p>
             </div>
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${statusTone(
-                investigation.status
-              )}`}
-            >
-              {investigation.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${statusTone(
+                  investigation.status
+                )}`}
+              >
+                {investigation.status}
+              </span>
+              <Link
+                href={`/investigations/${investigationId}/investigate`}
+                className="inline-flex items-center gap-1 rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy/90"
+              >
+                <GitBranch className="h-4 w-4" /> Run investigator
+              </Link>
+            </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">

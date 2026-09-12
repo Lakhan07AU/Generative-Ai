@@ -33,7 +33,11 @@ class LocalStorageService:
         bucket = self.buckets.get(bucket_key, bucket_key)
         full_dir = os.path.join(self.base_dir, bucket)
         os.makedirs(full_dir, exist_ok=True)
-        return os.path.join(full_dir, object_name)
+        path = os.path.join(full_dir, object_name)
+        parent = os.path.dirname(path)
+        if parent and parent != full_dir:
+            os.makedirs(parent, exist_ok=True)
+        return path
 
     def put_bytes(self, bucket_key: str, data: bytes, object_name: str, content_type: str = "application/octet-stream", lock: bool = False) -> str:
         path = self._local_path(bucket_key, object_name)

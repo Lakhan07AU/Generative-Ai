@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.api import auth, videos, cameras, dashboard, media, rag, policies, investigations, reports, evidence
+from app.api import auth, videos, cameras, dashboard, media, rag, policies, investigations, reports, evidence, live, evidence_live, demo, investigation_search, investigator, forensics
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,6 +44,12 @@ app.include_router(policies.router)
 app.include_router(investigations.router)
 app.include_router(reports.router)
 app.include_router(evidence.router)
+app.include_router(live.router)
+app.include_router(evidence_live.router)
+app.include_router(demo.router)
+app.include_router(investigation_search.router)
+app.include_router(investigator.router)
+app.include_router(forensics.router)
 
 
 @app.get("/")

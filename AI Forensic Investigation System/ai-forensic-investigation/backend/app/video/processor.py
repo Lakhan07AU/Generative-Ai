@@ -64,6 +64,7 @@ def process_video_job(video_id: int, job_id: int, local_video_path: str, user_id
 
     except Exception as exc:  # noqa: BLE001
         logger.error("Processing failed for video %s: %s", video_id, traceback.format_exc())
+        db.rollback()
         _set_job(db, job_id, "FAILED", error=str(exc))
         video = db.query(models.Video).filter(models.Video.id == video_id).first()
         if video:
@@ -79,6 +80,17 @@ def _persist_results(db, video_id: int, job_id: int, result: dict, user_id: int 
     video = db.query(models.Video).filter(models.Video.id == video_id).first()
     if not video:
         raise ValueError(f"Video {video_id} not found")
+
+    # Reprocessing is idempotent: clear any prior results for this video so the
+    # pipeline can be re-run without unique-constraint collisions (e.g. on demo
+    # or operator-triggered reprocess).
+    clip_ids = [c.id for c in db.query(models.Clip).filter(models.Clip.video_id == video_id).all()]
+    if clip_ids:
+        db.query(models.Detection).filter(models.Detection.clip_id.in_(clip_ids)).delete(synchronize_session=False)
+    db.query(models.Detection).filter(models.Detection.video_id == video_id).delete(synchronize_session=False)
+    db.query(models.Event).filter(models.Event.video_id == video_id).delete(synchronize_session=False)
+    db.query(models.Clip).filter(models.Clip.video_id == video_id).delete(synchronize_session=False)
+    db.commit()
 
     # Persist metadata onto the video row
     meta = result.get("metadata", {})

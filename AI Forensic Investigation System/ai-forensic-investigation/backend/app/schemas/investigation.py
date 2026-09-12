@@ -93,6 +93,19 @@ class TimelineEventOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    @field_validator("evidence_ids", mode="before")
+    @classmethod
+    def _parse_evidence_ids(cls, v):
+        if isinstance(v, str):
+            import json
+
+            try:
+                parsed = json.loads(v)
+            except json.JSONDecodeError:
+                return None
+            return parsed if isinstance(parsed, list) else None
+        return v
+
 
 # ---------------------------------------------------------------------------
 # Agent chat / investigation workspace
