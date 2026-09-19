@@ -1,0 +1,66 @@
+﻿........................................................................ [ 18%]
+........................................................................ [ 36%]
+........................................................................ [ 54%]
+........................................................................ [ 72%]
+........................................................................ [ 90%]
+.....................................                                    [100%]
+============================== warnings summary ===============================
+C:\Users\Lakha\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py:41
+  C:\Users\Lakha\AppData\Local\Programs\Python\Python311\Lib\site-packages\starlette\testclient.py:41: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    [], typing.ContextManager[anyio.abc.BlockingPortal]
+
+tests/test_detection_integration.py::TestICEBuffering::test_offer_flushes_buffered_candidates
+  C:\Users\Lakha\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\stash.py:108: RuntimeWarning: coroutine 'RTCPeerConnection.addIceCandidate' was never awaited
+    del self._storage[key]
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_forensic_phase8.py::test_timeline_is_chronological_and_never_invents
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:140: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_timeline_merges_same_track_same_event_within_epsilon
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:164: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_distinct_times_produce_distinct_entries
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:177: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_conflicting_evidence_is_flagged_not_resolved
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:195: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_vlm_observed_merges_with_its_source_frames
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:214: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_verification_scores_observed_track_finding_high
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:231: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_frame_only_low_resolution_never_becomes_observed
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:254: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_sequencing_is_never_causal
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:273: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_gaps_report_missing_ranges_and_coverage
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:299: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_unanswerable_run_analysis_is_honest
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:313: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_analysis_and_timeline_rows_persisted
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:330: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+tests/test_forensic_phase8.py::test_reanalyzing_replaces_analysis_not_source_evidence
+  D:\Github\Generative-Ai\AI Forensic Investigation System\ai-forensic-investigation\tests\test_forensic_phase8.py:346: LegacyAPIWarning: The Query.get() method is considered legacy as of the 1.x series of SQLAlchemy and becomes a legacy construct in 2.0. The method is now available as Session.get() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    inv = db.query(models.Investigation).get(inv_id)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html

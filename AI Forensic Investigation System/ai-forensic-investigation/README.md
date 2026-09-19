@@ -302,3 +302,53 @@ docker ps                                  # status
 
 The modular backend (`video/`, `vision/`, `audio/`, `api/`, `storage/`,
 `database/`) is designed so these layers integrate without rewriting Part 1.
+
+---
+
+## 15. Current Status (through Phase 9)
+
+The prototype now spans nine phases of investigation-assistance capability plus
+production hardening. Reports live beside this README:
+
+| Phase | Focus | Report |
+|-------|-------|--------|
+| 1 | Foundation, upload pipeline, auth, audit | `PHASE1_REPORT.md` |
+| 2 | Video RAG, clip embeddings (Qdrant), policy RAG | `PHASE2_REPORT.md` |
+| 3 | Real-time live camera + detection/tracking | `PHASE3_REPORT.md` |
+| 4 | Real-time VLM observations (grounded) | `PHASE4_REPORT.md` |
+| 5 | Live evidence capture + durable indexing | `PHASE5_REPORT.md` |
+| 6 | Demo investigation dataset + retrieval bounds | `PHASE6_REPORT.md` |
+| 7 | Controlled investigation agent | `PHASE7_REPORT.md` |
+| 8 | Forensic timeline / verification / reporting | `PHASE8_REPORT.md` |
+| 9 | Production hardening audit + fixes | `PHASE9_SYSTEM_AUDIT.md`, `PHASE9_REPORT.md` |
+
+### Phase 9 hardening at a glance
+
+- **Honest backends**: `/health` + `/metrics` report which vector/object stores
+  are actually live (Qdrant vs in-memory, MinIO vs local FS).
+- **Credential protection**: sliding-window login rate limit
+  (`LOGIN_RATE_LIMIT_*`), startup warning on known dev `SECRET_KEY`.
+- **Clean-start tooling**: `backend/scripts/reset_demo_database.py` (schema
+  reset + migrations + seed), `backup_database.py` (pg_dump/SQLite).
+- **Verifiers**: `verify_evidence_integrity.py` (sha256/orphans/index sync),
+  `verify_demo_dataset.py`, `run_full_e2e.py` (dependency-gated,
+  `NOT TESTED - DEPENDENCY UNAVAILABLE` semantics).
+- **New live transport**: `droidcam_usb` (USB/DroidCam camera capture) via a
+  proper `CameraSource` abstraction (`app/live/source.py`, `app/live/usb_camera.py`).
+- **Audit trail + ops visibility**: `GET /audit/logs` + `GET /audit/actions`
+  (ADMIN) surfaced through a new audit UI screen.
+- **Full test suite is green**: 405 tests across 34 modules pass; the 11-stage
+  end-to-end verifier passes all stages (db, cleaning, health, login, live file
+  session, VLM observation, evidence index/integrity, investigation agent run,
+  forensic analysis); demo dataset verifier 31 PASS / 0 FAIL / 0 WARN; evidence
+  integrity CLEAN (see `PHASE9_REPORT.md` and results JSON under
+  `backend/data/demo_investigation/results/`).
+
+Ongoing operations, architecture, demo, troubleshooting and security notes are
+in the `docs/` folder:
+
+- `docs/OPERATIONS.md`
+- `docs/ARCHITECTURE.md`
+- `docs/DEMO_GUIDE.md`
+- `docs/TROUBLESHOOTING.md`
+- `docs/SECURITY.md`

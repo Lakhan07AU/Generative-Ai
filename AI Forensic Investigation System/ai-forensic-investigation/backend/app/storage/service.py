@@ -1,5 +1,6 @@
 import io
 import os
+import shutil
 import uuid
 import logging
 
@@ -13,8 +14,8 @@ USE_LOCAL_STORAGE = True  # Set to False when MinIO is available
 class LocalStorageService:
     """Local filesystem storage fallback when MinIO is not available."""
 
-    def __init__(self):
-        self.base_dir = os.path.join(settings.DATA_DIR, "storage")
+    def __init__(self, base_dir: str | None = None):
+        self.base_dir = os.path.join(settings.DATA_DIR, "storage") if base_dir is None else base_dir
         os.makedirs(self.base_dir, exist_ok=True)
         self.buckets = {
             "videos": "videos",
@@ -47,7 +48,6 @@ class LocalStorageService:
         return f"{bucket}/{object_name}"
 
     def put_file(self, bucket_key: str, local_path: str, object_name: str, content_type: str = "application/octet-stream", lock: bool = False) -> str:
-        import shutil
         dest = self._local_path(bucket_key, object_name)
         shutil.copy2(local_path, dest)
         bucket = self.buckets.get(bucket_key, bucket_key)
@@ -66,6 +66,19 @@ class LocalStorageService:
 
     def presigned_url(self, storage_path: str, expires_seconds: int = 3600) -> str:
         return storage_path
+
+    def backend_name(self) -> str:
+        return "local"
+
+    def health(self) -> dict:
+        return {"backend": "local", "ok": True, "base_dir": self.base_dir}
+
+    def clear_buckets(self) -> None:
+        for bucket in self.buckets.values():
+            d = os.path.join(self.base_dir, bucket)
+            if os.path.isdir(d):
+                shutil.rmtree(d, ignore_errors=True)
+            os.makedirs(d, exist_ok=True)
 
     def unique_name(self, prefix: str, ext: str) -> str:
         return f"{prefix}-{uuid.uuid4().hex[:12]}{ext}"
@@ -140,6 +153,20 @@ def _create_storage():
                     return self.client.presigned_get_object(bucket, obj, expires=timedelta(seconds=expires_seconds))
                 except S3Error:
                     return ""
+
+            def backend_name(self):
+                return "minio"
+
+            def health(self):
+                return {"backend": "minio", "ok": True, "endpoint": settings.MINIO_ENDPOINT}
+
+            def clear_buckets(self):
+                for bucket in self.buckets.values():
+                    try:
+                        for obj in self.client.list_objects(bucket, recursive=True):
+                            self.client.remove_object(bucket, obj.object_name)
+                    except Exception:
+                        pass
 
             def unique_name(self, prefix, ext):
                 return f"{prefix}-{uuid.uuid4().hex[:12]}{ext}"

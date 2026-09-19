@@ -25,6 +25,7 @@ from app.auth.security import decode_access_token
 from app.audit.service import record_audit
 from app.live.manager import SessionStatus, manager
 from app.live.synthetic import FrameSimulationFeeder
+from app.live.usb_camera import UsbCameraSource
 from app.live.video_feeder import VideoFileFeeder
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,21 @@ def _on_file_finished(runtime):
         pass
 
 
+def _on_source_finished(runtime):
+    """USB/DroidCam source thread ended (device unplugged or gave up)."""
+    try:
+        source = getattr(runtime, "camera_source", None)
+        if source is not None:
+            source.stop()
+            runtime.camera_source = None
+        if runtime.status in SessionStatus.active_values():
+            runtime.mark_error("USB/DroidCam capture ended")
+        runtime.stop()
+        manager.stop(runtime.camera_id)
+    except Exception:
+        pass
+
+
 # ------------------------------------------------------------------- REST
 
 
@@ -122,7 +138,7 @@ def start_live_camera(
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     transport = payload.transport or "webrtc"
-    if transport not in ("webrtc", "simulation", "file"):
+    if transport not in ("webrtc", "simulation", "file", "droidcam_usb"):
         raise HTTPException(status_code=422, detail=f"Unsupported transport: {transport}")
     runtime = _start_runtime(db, camera, current_user, payload)
     if transport == "simulation":
@@ -145,6 +161,21 @@ def start_live_camera(
         runtime.video_feeder = feeder
         feeder.start()
         runtime.mark_live()
+    if transport == "droidcam_usb":
+        usb = UsbCameraSource(
+            runtime,
+            device_index=payload.device_index,
+            fps_target=payload.fps_target,
+        )
+        usb.on_finished = lambda: _on_source_finished(runtime)
+        try:
+            usb.start()
+        except Exception as exc:  # noqa: BLE001 - device/OpenCV failure
+            runtime.mark_error(f"USB/DroidCam capture failed: {exc}")
+            manager.stop(camera.id)
+            raise HTTPException(status_code=503, detail=f"USB/DroidCam camera unavailable: {exc}")
+        runtime.camera_source = usb
+        runtime.mark_live()
     return _camera_session_out(runtime)
 
 
@@ -166,6 +197,9 @@ def stop_live_camera(
     if getattr(runtime, "video_feeder", None) is not None:
         runtime.video_feeder.stop()
         runtime.video_feeder = None
+    if getattr(runtime, "camera_source", None) is not None:
+        runtime.camera_source.stop()
+        runtime.camera_source = None
     runtime.stop()  # STOPPING -> COMPLETED (persisted)
     manager.stop(camera_id)  # release the single-session lock
     record_audit(
@@ -314,6 +348,14 @@ async def ws_live_signaling(websocket: WebSocket, camera_id: int, db: Session = 
             return
 
         runtime = manager.get(camera_id)
+        if runtime is not None and runtime.status not in SessionStatus.active_values():
+            # A stale terminal-state runtime (e.g. a WebRTC session that failed
+            # or a feeder/source that ended) must be evicted so a reconnecting
+            # phone gets a fresh session instead of an endless "Session not
+            # active" rejection. REST /start already overwrites via
+            # manager.start(); the signaling path must do the same.
+            manager.stop(camera_id)
+            runtime = None
         if runtime is None:
             from app.live.manager import ActiveSessionError
 

@@ -97,7 +97,7 @@ class VideoFileFeeder:
                     if self.on_finished is not None:
                         self.on_finished()
                     break
-                timestamp = time.time() - self._started_at
+                timestamp = time.time()
                 self._runtime.ingest_frame(frame, timestamp)
                 self._stop.wait(period)
         finally:

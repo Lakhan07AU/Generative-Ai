@@ -122,6 +122,7 @@ class LiveSessionRuntime:
         self.webrtc = None
         self.simulation = None
         self.video_feeder = None
+        self.camera_source = None
         self._last_persist_at = 0.0
         self._lock = threading.RLock()
         self._subscribers: List[_Subscriber] = []
@@ -671,6 +672,10 @@ class LiveSessionRuntime:
         detection_recent = (
             len(self.detection.recent_results()) if self.detection is not None else 0
         )
+        camera_source = getattr(self, "camera_source", None)
+        source_health = self.source.health() if self.source is not None else None
+        if camera_source is not None:
+            source_health = camera_source.health()
         return {
             "camera_id": self.camera_id,
             "camera_name": self.camera_name,
@@ -678,6 +683,7 @@ class LiveSessionRuntime:
             "active": status in SessionStatus.active_values(),
             "status": status,
             "transport": self.transport,
+            "source_health": source_health,
             "fps_target": self.fps_target,
             "window_seconds": self.window_seconds,
             "max_frames": self.max_frames,
@@ -818,6 +824,13 @@ class LiveCameraManager:
             if video_feeder is not None:
                 video_feeder.stop()
                 runtime.video_feeder = None
+            camera_source = getattr(runtime, "camera_source", None)
+            if camera_source is not None:
+                try:
+                    camera_source.stop()
+                except Exception:  # noqa: BLE001
+                    pass
+                runtime.camera_source = None
 
 
 manager = LiveCameraManager()

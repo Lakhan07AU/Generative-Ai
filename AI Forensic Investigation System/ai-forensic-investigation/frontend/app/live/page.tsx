@@ -158,7 +158,8 @@ function DetectionOverlay({
 export default function LivePage() {
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState("");
-  const [transport, setTransport] = useState<"webrtc" | "simulation" | "file">("webrtc");
+  const [transport, setTransport] = useState<"webrtc" | "simulation" | "file" | "droidcam_usb">("webrtc");
+  const [deviceIndex, setDeviceIndex] = useState(0);
   const [demoVideos, setDemoVideos] = useState<DemoVideoAsset[]>([]);
   const [selectedDemoPath, setSelectedDemoPath] = useState("");
   const [session, setSession] = useState<CameraSession | null>(null);
@@ -725,6 +726,8 @@ export default function LivePage() {
       const ses = await api.liveStart(cameraId, {
         transport,
         video_path: transport === "file" ? selectedDemoPath || undefined : undefined,
+        device_index:
+          transport === "droidcam_usb" ? Number(deviceIndex) || 0 : undefined,
         fps_target: 5,
         buffer_window_seconds: 15,
         buffer_max_frames: 150,
@@ -820,16 +823,18 @@ export default function LivePage() {
                 <label className="text-sm font-medium">Transport</label>
                 <Select
                   value={transport}
-                  onChange={(e) => setTransport(e.target.value as "webrtc" | "simulation" | "file")}
+                  onChange={(e) => setTransport(e.target.value as "webrtc" | "simulation" | "file" | "droidcam_usb")}
                 >
                   <option value="webrtc">WebRTC (real camera)</option>
                   <option value="simulation">Simulation (synthetic frames)</option>
                   <option value="file">Demo file (real video pipeline)</option>
+                  <option value="droidcam_usb">USB / DroidCam camera</option>
                 </Select>
                 <p className="text-xs text-slate-500">
                   WebRTC streams the phone camera via SDP signaling. Simulation feeds synthetic frames for testing.
                   {" "}Demo file replays a licensed demo clip through the real CV2 → detection → tracking → VLM →
-                  evidence pipeline.
+                  evidence pipeline.{" "}
+                  {" "}USB/DroidCam captures a local camera device over OpenCV.
                 </p>
               </div>
 
@@ -850,6 +855,22 @@ export default function LivePage() {
                   <p className="text-xs text-slate-500">
                     The selected clip is replayed as a camera feed on the backend. Make sure the camera below is an
                     offline/CCTV demo camera.
+                  </p>
+                </div>
+              )}
+
+              {transport === "droidcam_usb" && (
+                <div className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3">
+                  <label className="text-sm font-medium">Device index</label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={deviceIndex}
+                    onChange={(e) => setDeviceIndex(Number(e.target.value) || 0)}
+                  />
+                  <p className="text-xs text-slate-500">
+                    OpenCV capture device index (DroidCam Desktop 4 / UVC camera on default index 0).
                   </p>
                 </div>
               )}

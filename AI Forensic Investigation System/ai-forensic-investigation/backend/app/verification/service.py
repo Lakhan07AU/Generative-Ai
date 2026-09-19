@@ -48,6 +48,12 @@ def _extract_timestamp(claim_text: str) -> Optional[float]:
     return float(h * 3600 + mm * 60 + ss)
 
 
+def _extract_tracking_id(claim_text: str) -> Optional[str]:
+    """Extract a concrete tracking identifier (e.g. ``tracking person-001``)."""
+    m = re.search(r"\btracking\s+([A-Za-z][A-Za-z0-9]*(?:[-\s][A-Za-z0-9]+)*)", claim_text, re.IGNORECASE)
+    return m.group(1).strip() if m else None
+
+
 def decompose_claim(claim_text: str) -> dict:
     """Break a claim into atomic, checkable facts."""
     analysis = analyze_query(claim_text)
@@ -56,6 +62,7 @@ def decompose_claim(claim_text: str) -> dict:
         "subject_types": analysis["entities"],
         "events": analysis["events"],
         "timestamp": ts,
+        "tracking_id": _extract_tracking_id(claim_text),
         "raw": claim_text,
     }
 
@@ -79,6 +86,9 @@ def _supporting_clips(db: Session, decomposition: dict, video_id: Optional[int])
         q = q.filter(models.Detection.video_id == video_id)
     if label_filter:
         q = q.filter(models.Detection.label.in_(sorted(label_filter)))
+    tracking_id = decomposition.get("tracking_id")
+    if tracking_id:
+        q = q.filter(models.Detection.tracking_id == tracking_id)
     for d in q.order_by(models.Detection.detection_confidence.desc()).limit(50).all():
         cid = d.clip_id
         if cid in matched:

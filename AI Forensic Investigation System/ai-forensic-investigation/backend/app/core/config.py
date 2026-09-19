@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
 
+    # ---- Phase 9: credential rate limiting --------------------------------
+    # Sliding-window login throttling keyed by IP + email (in-process). Disable
+    # only when a reverse proxy already enforces equivalent limits.
+    LOGIN_RATE_LIMIT_ENABLED: bool = True
+    LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = 5
+    LOGIN_RATE_LIMIT_WINDOW_SECONDS: float = 60.0
+
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
@@ -152,6 +159,21 @@ class Settings(BaseSettings):
     # host-candidate-only is enough for the same-LAN physical demo. Set this when
     # the phone and backend are separated by NAT.
     WEBRTC_ICE_SERVERS: str = "[]"
+
+    # ---- Phase 9: USB / DroidCam capture source ---------------------------
+    # Transport "droidcam_usb" decodes frames from a local USB camera or a
+    # DroidCam virtual camera (DroidCam Desktop 4 assigns the installed driver,
+    # typically OpenCV device index 0) and feeds them into a live session the
+    # same way the demo file transport does. Requires OpenCV (cv2).
+    DROIDCAM_DEVICE_INDEX: int = 0
+    # Optional frame-rate override for the USB source; when empty the camera's
+    # native CAP_PROP_FPS is used (with LIVE_SESSION_FPS as a sane lower bound).
+    DROIDCAM_FPS: float = 0.0
+    # Seconds without a frame before the source reports itself as unhealthy.
+    DROIDCAM_STALE_SECONDS: float = 5.0
+    # Soft restart attempts when the capture thread dies unexpectedly (0 = none).
+    DROIDCAM_MAX_RESTARTS: int = 3
+    # Sampling/ingest tuning for the transport the same as any live session.
 
     # ---- Phase 2: Real-time YOLO detection -------------------------------
 

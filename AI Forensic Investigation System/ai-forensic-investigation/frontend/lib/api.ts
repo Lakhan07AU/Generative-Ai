@@ -1112,6 +1112,17 @@ export type ReportAuditEntry = {
   created_at?: string | null;
 };
 
+export type AuditLogEntry = {
+  id: number;
+  action: string;
+  user_id: number | null;
+  user_email?: string | null;
+  entity_type?: string | null;
+  entity_id?: number | null;
+  details?: string | null;
+  created_at?: string | null;
+};
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -1331,6 +1342,16 @@ export const api = {
   reportFileUrl: (id: number, download = false) =>
     `${API_URL}/reports/${id}/file?download=${download}`,
 
+  // ---- Phase 9: Audit log ----
+
+  auditLogs: (params?: { action?: string; limit?: number }) => {
+    const qp = new URLSearchParams();
+    if (params?.action) qp.set("action", params.action);
+    if (params?.limit) qp.set("limit", String(params.limit));
+    const qs = qp.toString();
+    return request<AuditLogEntry[]>(`/audit/logs${qs ? `?${qs}` : ""}`);
+  },
+
   // ---- Phase 1: Live mobile camera ----
 
   liveStart: (
@@ -1341,6 +1362,7 @@ export const api = {
       buffer_window_seconds?: number;
       buffer_max_frames?: number;
       video_path?: string;
+      device_index?: number;
     }
   ) =>
     request<CameraSession>(`/live/cameras/${cameraId}/start`, {
