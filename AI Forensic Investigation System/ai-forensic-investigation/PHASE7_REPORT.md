@@ -140,7 +140,7 @@ unstamped `investigation_runs` (4 experimental rows, missing defaults/index) was
 ## 16. Unit Tests — Classifier & Planner
 **PASS.** `test_classify_categories`, `test_classify_unanswerable_reasons_are_explicit` (asserts the
 literal `INTENT` token in `category_reason`), `test_planner_steps_are_bounded_and_whitelisted`,
-`test_sanitize_evidence_text_strips_untrusted_junk`, `test_detect_conflicts_unit` — all green.
+`test_sanitize_evidence_text_strips_untrusted_junk`, `test_detect_confli9cts_unit` — all green.
 
 ## 17. Unit + Integration Tests — Agent Runs
 **PASS.** `test_run_track_query_completes_with_verified_findings`, `test_run_presence_answered`,
