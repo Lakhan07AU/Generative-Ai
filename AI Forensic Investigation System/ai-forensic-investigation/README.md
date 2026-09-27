@@ -352,3 +352,56 @@ in the `docs/` folder:
 - `docs/DEMO_GUIDE.md`
 - `docs/TROUBLESHOOTING.md`
 - `docs/SECURITY.md`
+
+---
+
+## 16. Laptop Webcam Transport + Final Verification (2026-09-27)
+
+A real local-camera transport (`webcam`) is now available in the Live Console
+alongside `webrtc` / `simulation` / `file` / `droidcam_usb`. It shares a
+single OpenCV capture implementation (`LocalOpenCVCameraSource`) and the same
+ingest, detection, tracking, evidence and audit path — no second pipeline.
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `WEBCAM_DEVICE_INDEX` | 0 | OpenCV capture index (0 is not guaranteed to exist — probe it) |
+| `WEBCAM_FPS` | 10 | Requested capture rate |
+| `WEBCAM_WIDTH` / `WEBCAM_HEIGHT` | 640 / 480 | Requested capture size |
+| `WEBCAM_STALE_SECONDS` | 5.0 | No frame for this long → `alive=false` |
+| `WEBCAM_MAX_RESTARTS` | 3 | Bounded reconnects (never infinite) |
+
+Usage, probing and the Docker caveat are documented in `WEBCAM_SETUP.md`.
+
+### PHYSICAL LIVE CAMERA VERIFICATION
+
+| Check | Result |
+|---|---|
+| Camera detected (device 0-3) | **NOT TESTED** — `/dev/video*` absent in the container; `verify_webcam.py --probe` → `RESULT: NO DEVICE` |
+| Frame capture / live ingestion | NOT TESTED (depends on the above) |
+| YOLO / tracking / events / evidence | VERIFIED on real frames from the demo **file** transport (not from a camera) |
+| PostgreSQL / MinIO / Qdrant | **PASS** — real services, alembic head `0008_phase8_forensics`, Qdrant dims 384, no in-memory fallback |
+| VLM | **NOT TESTED** — `REAL VLM PROVIDER NOT TESTED` (no credentials configured) |
+| RAG / LangGraph / timeline / finding verification / human review / PDF report | **PASS** — Phases 6/7/8 green; PDF now renders via ReportLab |
+| Test suite | **PASS** — 419 tests, 0 failures (405 + 14 new webcam tests) |
+| `npm run build` | **PASS** |
+
+Overall: `FINAL STATUS: NOT READY` — the single blocker is that the physical
+laptop webcam is not reachable from the verification environment, so the live
+camera chain has no evidence of success. Full detail and the exact reproduction
+steps: `FINAL_SYSTEM_REPORT.md`.
+
+### Verifier entry points
+
+| Script | Scope |
+|---|---|
+| `backend/scripts/verify_phase5.py` | evidence model, PostgreSQL, alembic head, MinIO frames/reports, real Qdrant, evidence integrity |
+| `backend/scripts/verify_phase6.py` | video RAG against real evidence + live API |
+| `backend/scripts/verify_phase7.py` | LangGraph investigation agent graph |
+| `backend/scripts/verify_phase8.py` | forensic analysis, timeline, verification, report + PDF |
+| `backend/scripts/verify_webcam.py` | real capture device (probe / capture test) |
+| `backend/scripts/verify_live_webcam.py` | webcam → session → ingest → YOLO → tracking → events → evidence → PG → MinIO → Qdrant → VLM |
+| `backend/scripts/verify_final_system.py` | everything, with the final status matrix |
+
+Run `python backend/scripts/verify_final_system.py` for the full matrix. A
+skipped or unrunnable section is reported as `NOT TESTED` and forces
+`FINAL STATUS: NOT READY`.

@@ -11,10 +11,12 @@ Transport design (per Phase 1 requirements):
 import asyncio
 import logging
 import os
+import time
 from functools import partial
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -26,6 +28,7 @@ from app.audit.service import record_audit
 from app.live.manager import SessionStatus, manager
 from app.live.synthetic import FrameSimulationFeeder
 from app.live.usb_camera import UsbCameraSource
+from app.live.webcam_camera import WebcamCameraSource
 from app.live.video_feeder import VideoFileFeeder
 
 logger = logging.getLogger(__name__)
@@ -138,7 +141,8 @@ def start_live_camera(
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     transport = payload.transport or "webrtc"
-    if transport not in ("webrtc", "simulation", "file", "droidcam_usb"):
+    supported = ("webrtc", "simulation", "file", "droidcam_usb", "webcam")
+    if transport not in supported:
         raise HTTPException(status_code=422, detail=f"Unsupported transport: {transport}")
     runtime = _start_runtime(db, camera, current_user, payload)
     if transport == "simulation":
@@ -161,20 +165,25 @@ def start_live_camera(
         runtime.video_feeder = feeder
         feeder.start()
         runtime.mark_live()
-    if transport == "droidcam_usb":
-        usb = UsbCameraSource(
+    if transport in ("droidcam_usb", "webcam"):
+        # Laptop webcam and DroidCam/USB share one OpenCV capture implementation
+        # (app/live/webcam_camera.py -> LocalOpenCVCameraSource) and one ingest
+        # path; only the transport name and defaults differ.
+        source_cls = WebcamCameraSource if transport == "webcam" else UsbCameraSource
+        label = "Webcam" if transport == "webcam" else "USB/DroidCam"
+        source = source_cls(
             runtime,
             device_index=payload.device_index,
             fps_target=payload.fps_target,
         )
-        usb.on_finished = lambda: _on_source_finished(runtime)
+        source.on_finished = lambda: _on_source_finished(runtime)
         try:
-            usb.start()
+            source.start()
         except Exception as exc:  # noqa: BLE001 - device/OpenCV failure
-            runtime.mark_error(f"USB/DroidCam capture failed: {exc}")
+            runtime.mark_error(f"{label} capture failed: {exc}")
             manager.stop(camera.id)
-            raise HTTPException(status_code=503, detail=f"USB/DroidCam camera unavailable: {exc}")
-        runtime.camera_source = usb
+            raise HTTPException(status_code=503, detail=f"{label} camera unavailable: {exc}")
+        runtime.camera_source = source
         runtime.mark_live()
     return _camera_session_out(runtime)
 
@@ -240,6 +249,80 @@ def live_sessions(
     current_user: User = Depends(get_current_user),
 ):
     return [LiveStatusOut(**r.snapshot()) for r in manager.active_sessions()]
+
+
+# --------------------------------------------------------- MJPEG preview
+
+
+async def mjpeg_frame_stream(runtime, sub, boundary: str):
+    """Yield ``multipart/x-mixed-replace`` parts for a preview subscriber.
+
+    Frames are forwarded as fast as the capture produces them; a browser that
+    cannot keep up drops frames in :meth:`_Subscriber`'s queue instead of
+    back-pressuring the capture thread.
+    """
+    try:
+        while True:
+            try:
+                jpeg = await asyncio.wait_for(sub.queue.get(), timeout=1.0)
+            except asyncio.TimeoutError:
+                if runtime.status not in SessionStatus.active_values():
+                    return
+                continue  # no frame within 1s: stay connected, keep waiting
+            if not jpeg:
+                continue
+            yield (
+                f"--{boundary}\r\n"
+                f"Content-Type: image/jpeg\r\n"
+                f"Content-Length: {len(jpeg)}\r\n\r\n"
+            ).encode("ascii") + jpeg + b"\r\n"
+    except asyncio.CancelledError:  # browser navigated away / tab closed
+        raise
+    finally:
+        runtime.unsubscribe_preview(sub)
+
+
+@router.get("/live/cameras/{camera_id}/stream.mjpg")
+async def live_camera_stream_mjpeg(
+    camera_id: int,
+    token: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Live JPEG preview of the frames the backend is actually analysing.
+
+    ``webcam``, ``droidcam_usb``, ``file`` and ``simulation`` sessions have no
+    video track in the browser, so the console would otherwise show an empty
+    (black) surface. This endpoint re-publishes the very same frames that are
+    pushed into detection, which is what the bounding boxes are drawn on.
+
+    The token is accepted as a query parameter because an ``<img>`` element
+    cannot send an ``Authorization`` header. Authentication and role checks are
+    identical to the other live endpoints.
+    """
+    user = _user_from_token(db, token)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    if user.role not in LIVE_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+    runtime = manager.get(camera_id)
+    if runtime is None or runtime.status not in SessionStatus.active_values():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No active live session")
+    if runtime.transport == "webrtc":
+        # WebRTC already delivers the remote track; re-encoding would be waste.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="WebRTC sessions use the native video track, not the MJPEG preview",
+        )
+
+    sub = runtime.subscribe_preview()
+    boundary = f"frame{int(time.time() * 1000)}"
+
+    return StreamingResponse(
+        mjpeg_frame_stream(runtime, sub, boundary),
+        media_type=f"multipart/x-mixed-replace; boundary={boundary}",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+    )
 
 
 # --------------------------------------------------------- WebSocket auth

@@ -102,6 +102,27 @@ export type LiveStatus = {
   vlm_last_error?: string | null;
   vlm_requests?: number | null;
   vlm_observations?: number | null;
+  source_health?: LiveSourceHealth | null;
+  evidence_enabled?: boolean | null;
+  evidence_last_error?: string | null;
+  evidence_captured?: number | null;
+  evidence_indexed?: number | null;
+  evidence_failed?: number | null;
+};
+
+/** Health payload of the media transport (CameraSource.health()). */
+export type LiveSourceHealth = {
+  source?: string;
+  device_index?: number;
+  opened?: boolean;
+  alive?: boolean;
+  running?: boolean;
+  frames_read?: number;
+  dropped_frames?: number;
+  restarts?: number;
+  last_frame_at?: number;
+  now?: number;
+  error?: string | null;
 };
 
 export type LiveStatusEvent = {
@@ -148,6 +169,12 @@ export type LiveDetectionMetrics = {
   sampled_fps: number;
   processed_fps: number;
   detection_fps: number;
+  /** Real loaded model, reported by the backend (never inferred client-side). */
+  model?: string | null;
+  device?: string | null;
+  requested_device?: string | null;
+  imgsz?: number | null;
+  classes?: number | null;
   inference_latency_avg_ms: number;
   inference_latency_max_ms: number;
   queue_depth: number;

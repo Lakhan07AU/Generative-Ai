@@ -6,9 +6,11 @@ from datetime import datetime
 class LiveStartRequest(BaseModel):
     """Parameters for starting a live capture session."""
 
-    transport: str = "webrtc"  # "webrtc" | "simulation" | "file" | "droidcam_usb"
+    # "webrtc" | "simulation" | "file" | "droidcam_usb" | "webcam"
+    transport: str = "webrtc"
     fps_target: Optional[float] = None
     video_path: Optional[str] = None
+    # OpenCV capture device index for the "webcam" / "droidcam_usb" transports.
     device_index: Optional[int] = None
     buffer_window_seconds: Optional[float] = None
     buffer_max_frames: Optional[int] = None

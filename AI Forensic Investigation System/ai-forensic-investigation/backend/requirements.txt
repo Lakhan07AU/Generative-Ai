@@ -52,3 +52,7 @@ httpx==0.27.0
 # Part 3 - Agentic investigation (bounded LangGraph agent)
 langgraph==1.2.11
 langchain-core==1.6.1
+
+# Forensic report rendering - real PDF output (app/report/service.py, app/forensic/report.py)
+# Without this the renderer degrades to markdown, which is NOT a PDF report.
+reportlab==4.2.5

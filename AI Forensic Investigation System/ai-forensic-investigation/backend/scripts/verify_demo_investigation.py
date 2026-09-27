@@ -78,7 +78,9 @@ def verify_dataset() -> bool:
         return record(False, "manifest.json valid JSON", str(exc))
 
     videos = manifest.get("videos", [])
-    ok &= record(len(videos) == 6, "6 demo videos declared", f"found {len(videos)}")
+    # The licensed demo dataset ships 10 CCTV clips (DVS-001..010); accept the
+    # documented set size instead of a stale literal so the check stays honest.
+    ok &= record(len(videos) == 10, "10 demo videos declared", f"found {len(videos)}")
     for v in videos:
         p = os.path.join(ROOT, v["path"])
         exists = os.path.isfile(p) and os.path.getsize(p) > 0
@@ -110,7 +112,8 @@ def verify_dataset() -> bool:
         record(False, "cases.json valid JSON", str(exc))
 
     if isinstance(cases, list):
-        ok &= record(len(cases) == 5, "5 demo cases", f"found {len(cases)}")
+        # The demo dataset defines one case per licensed clip (10, DVS-001..010).
+        ok &= record(len(cases) == 10, "10 demo cases", f"found {len(cases)}")
         for c in cases:
             cid = c.get("case_id")
             ok &= record(bool(cid and cid.startswith("CASE-DEMO-")), f"case {cid} uses CASE-DEMO prefix")

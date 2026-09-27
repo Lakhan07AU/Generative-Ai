@@ -175,6 +175,29 @@ class Settings(BaseSettings):
     DROIDCAM_MAX_RESTARTS: int = 3
     # Sampling/ingest tuning for the transport the same as any live session.
 
+    # ---- Laptop webcam capture source (transport "webcam") ---------------
+    # Same OpenCV capture implementation as "droidcam_usb"
+    # (see app/live/webcam_camera.py); only the defaults and the reported
+    # source name differ. Device index 0 is the default on Windows/macOS/Linux
+    # but is NOT assumed to exist - use backend/scripts/verify_webcam.py --probe
+    # to discover the indices actually present on the host.
+    WEBCAM_DEVICE_INDEX: int = 0
+    # Requested capture rate (frames/sec) and capture resolution.
+    WEBCAM_FPS: float = 10.0
+    WEBCAM_WIDTH: int = 640
+    WEBCAM_HEIGHT: int = 480
+    # Seconds without a frame before the source reports itself as unhealthy.
+    WEBCAM_STALE_SECONDS: float = 5.0
+    # Bounded soft-restart attempts when the device stops delivering frames
+    # (0 = none). Never an unbounded/infinite reconnect loop.
+    WEBCAM_MAX_RESTARTS: int = 3
+    # Consecutive failed reads before a reconnect is attempted.
+    WEBCAM_MAX_CONSECUTIVE_FAILURES: int = 10
+    # JPEG quality for the browser preview stream (MJPEG) of backend-captured
+    # frames. Encoding only happens while a browser is actually watching, so a
+    # WebRTC session never pays for it.
+    WEBCAM_PREVIEW_JPEG_QUALITY: int = 70
+
     # ---- Phase 2: Real-time YOLO detection -------------------------------
 
     # Master switch: when disabled, live sessions run without inference.

@@ -132,3 +132,43 @@ policy QA, demo, and admin. JWT stored in localStorage by `lib/api.ts`.
   unanswerable runs report honestly.
 - Baseline ordering and the 11-scenario benchmark dataset
   (`data/evaluation/benchmark.jsonl`) are deterministic and reproducible.
+---
+
+## 16. Laptop Webcam Transport (`webcam`)
+
+The live console gained a real local-camera transport alongside the existing
+`webrtc` / `simulation` / `file` / `droidcam_usb` options. There is
+**one** OpenCV capture implementation in the codebase:
+
+``text
+webcam                droidcam_usb
+   \                   /
+    LocalOpenCVCameraSource            app/live/webcam_camera.py
+                  |
+                  v
+        runtime.ingest_frame(frame, timestamp)      <- same ingest path
+                  |
+   FrameIngestion -> FrameSampler -> RollingFrameBuffer
+                  -> YOLO detection -> tracking -> events
+                  -> ForensicEvidence -> PostgreSQL + MinIO (sha256) -> Qdrant -> VLM
+``
+
+* `LocalOpenCVCameraSource` implements the full `CameraSource` contract
+  (`connect`/`disconnect`/`read_frame`/`start`/`stop`/`is_alive`/`health`).
+* `WebcamCameraSource` (`name="webcam"`) reads `WEBCAM_*` settings;
+  `UsbCameraSource` (`name="droidcam_usb"`) reads `DROIDCAM_*`. Both feed
+  the identical pipeline, so detection, tracking, evidence and audit behaviour
+  cannot diverge between transports.
+* `connect()` reads one real frame before declaring the device open, because
+  `cv2.VideoCapture(0)` can report `isOpened() == True` for a device that
+  does not exist. A missing camera therefore returns HTTP 503 instead of a
+  silent zero-frame session.
+* Reconnects are bounded by `WEBCAM_MAX_RESTARTS` (default 3) — there is no
+  infinite reconnect loop; the session ends with a health `error` plus an audit
+  record.
+* `GET /live/cameras/{id}/status` exposes `source_health`
+  (`opened`/`alive`/`running`/`frames_read`/`dropped_frames`/
+  `restarts`/`last_frame_at`/`error`) and the evidence counters
+  (`evidence_captured`/`evidence_indexed`/`evidence_failed`).
+* Verification: `backend/scripts/verify_webcam.py` (device level) and
+  `backend/scripts/verify_live_webcam.py` (full chain). See `WEBCAM_SETUP.md`.
