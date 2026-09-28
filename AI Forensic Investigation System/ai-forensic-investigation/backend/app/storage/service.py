@@ -64,6 +64,24 @@ class LocalStorageService:
         path = os.path.join(self.base_dir, bucket, obj)
         return os.path.exists(path)
 
+    def delete(self, storage_path: str) -> bool:
+        """Delete a stored object. Returns True if a file was removed.
+
+        Idempotent: a path that does not exist is not an error. The resolved
+        path must stay inside the storage base directory.
+        """
+        if not storage_path:
+            return False
+        bucket, _, obj = storage_path.partition("/")
+        path = os.path.join(self.base_dir, bucket, obj)
+        root = os.path.abspath(self.base_dir)
+        if os.path.abspath(path) == root or not os.path.abspath(path).startswith(root + os.sep):
+            raise ValueError(f"refusing to delete outside storage root: {storage_path}")
+        if not os.path.isfile(path):
+            return False
+        os.remove(path)
+        return True
+
     def presigned_url(self, storage_path: str, expires_seconds: int = 3600) -> str:
         return storage_path
 
@@ -142,6 +160,25 @@ def _create_storage():
                     return self.client.stat_object(bucket, obj) is not None
                 except S3Error:
                     return False
+
+            def delete(self, storage_path):
+                """Delete a stored object. Returns True if an object was removed.
+
+                Idempotent: a missing object is not an error.
+                """
+                if not storage_path:
+                    return False
+                from minio.error import S3Error
+                bucket, sep, obj = storage_path.partition("/")
+                if not sep:
+                    return False
+                if not self.exists(storage_path):
+                    return False
+                try:
+                    self.client.remove_object(bucket, obj)
+                except S3Error:
+                    return False
+                return True
 
             def presigned_url(self, storage_path, expires_seconds=3600):
                 from datetime import timedelta

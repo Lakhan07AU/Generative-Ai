@@ -80,12 +80,13 @@ function indexVariant(status: string): "success" | "warning" | "danger" | "muted
   return "muted";
 }
 
-type LiveTransport = "webrtc" | "webcam" | "droidcam_usb" | "simulation" | "file";
+type LiveTransport = "webrtc" | "webcam" | "droidcam_usb" | "ipcam" | "simulation" | "file";
 
 /** Human-readable, unambiguous camera-source labels (never call simulation "real"). */
 const SOURCE_LABEL: Record<string, string> = {
   webcam: "Laptop Webcam (real)",
   droidcam_usb: "USB / DroidCam (real)",
+  ipcam: "Phone IP Camera (real network stream)",
   webrtc: "Phone WebRTC (real)",
   simulation: "Simulation (synthetic)",
   file: "Demo Video (not evidence)",
@@ -254,6 +255,7 @@ export default function LivePage() {
   const [selectedCameraId, setSelectedCameraId] = useState("");
   const [transport, setTransport] = useState<LiveTransport>("webrtc");
   const [deviceIndex, setDeviceIndex] = useState(0);
+  const [streamUrl, setStreamUrl] = useState("");
   const [fpsTarget, setFpsTarget] = useState(10);
   const [demoVideos, setDemoVideos] = useState<DemoVideoAsset[]>([]);
   const [selectedDemoPath, setSelectedDemoPath] = useState("");
@@ -825,7 +827,11 @@ export default function LivePage() {
           transport === "webcam" || transport === "droidcam_usb"
             ? Number(deviceIndex) || 0
             : undefined,
-        fps_target: transport === "webcam" || transport === "droidcam_usb" ? fpsTarget : 5,
+        stream_url: transport === "ipcam" ? streamUrl.trim() || undefined : undefined,
+        fps_target:
+          transport === "webcam" || transport === "droidcam_usb" || transport === "ipcam"
+            ? fpsTarget
+            : 5,
         buffer_window_seconds: 15,
         buffer_max_frames: 150,
       });
@@ -935,6 +941,7 @@ export default function LivePage() {
                   <option value="webrtc">Phone WebRTC (real camera over network)</option>
                   <option value="webcam">Laptop Webcam (real local camera)</option>
                   <option value="droidcam_usb">USB / DroidCam camera (real local camera)</option>
+                  <option value="ipcam">Phone IP camera (real network stream)</option>
                   <option value="simulation">Simulation (synthetic frames — NOT evidence)</option>
                   <option value="file">Demo Video (licensed clip — NOT evidence)</option>
                 </Select>
@@ -967,6 +974,42 @@ export default function LivePage() {
                     The selected clip is replayed as a camera feed on the backend. Make sure the camera below is an
                     offline/CCTV demo camera.
                   </p>
+                </div>
+              )}
+
+              {transport === "ipcam" && (
+                <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+                    <Video className="h-4 w-4" /> PHONE IP CAMERA - the backend pulls a real network stream from a
+                    phone. An unreachable stream fails the start request (HTTP 503); it never fakes frames.
+                  </p>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Stream URL</label>
+                    <Input
+                      value={streamUrl}
+                      onChange={(e) => setStreamUrl(e.target.value)}
+                      placeholder="http://10.5.176.115:8080/video"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Android &quot;IP Webcam&quot;: <code>http://&lt;phone-ip&gt;:8080/video</code> (MJPEG) or{" "}
+                      <code>http://&lt;phone-ip&gt;:8080/h264</code>; RTSP also works, e.g.{" "}
+                      <code>rtsp://&lt;phone-ip&gt;:554/...</code>. The backend must be able to reach that
+                      address. Verify with <code>verify_ipcam.py</code>.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">FPS</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={fpsTarget}
+                      onChange={(e) => setFpsTarget(Number(e.target.value) || 5)}
+                    />
+                    <p className="text-xs text-slate-500">
+                      Analysis rate fed to YOLO. The phone may send more; frames are sampled down.
+                    </p>
+                  </div>
                 </div>
               )}
 

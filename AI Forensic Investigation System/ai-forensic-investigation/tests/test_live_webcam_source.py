@@ -14,6 +14,8 @@ import types
 import numpy as np
 import pytest
 
+from app.core.config import settings
+from app.live import webcam_camera
 from app.live.source import CameraSource
 from app.live.usb_camera import UsbCameraSource
 from app.live.webcam_camera import LocalOpenCVCameraSource, WebcamCameraSource
@@ -64,17 +66,27 @@ class FakeCapture:
 
 @pytest.fixture
 def fake_cv2(monkeypatch):
-    """Install a fake ``cv2`` module and return a factory-configurable holder."""
-    holder = types.SimpleNamespace(captures=[], kwargs={})
+    """Install a fake ``cv2`` module and return a factory-configurable holder.
 
-    def install(**kwargs):
+    ``backends`` maps a ``cv2.CAP_*`` value to a capture that should be created
+    for it, so the multi-backend probe can be exercised.
+    """
+
+    holder = types.SimpleNamespace(captures=[], kwargs={}, backends={})
+
+    def install(backends=None, **kwargs):
         cap = FakeCapture(**kwargs)
         holder.captures.append(cap)
+        holder.backends = backends or {}
         module = types.ModuleType("cv2")
-        module.VideoCapture = lambda index: cap
+        module.VideoCapture = lambda index, api=0: cap
         module.CAP_PROP_FPS = 5
         module.CAP_PROP_FRAME_WIDTH = 3
         module.CAP_PROP_FRAME_HEIGHT = 4
+        module.CAP_ANY = 0
+        module.CAP_DSHOW = 700
+        module.CAP_MSMF = 1400
+        module.CAP_V4L2 = 200
         module.__version__ = "fake"
         monkeypatch.setitem(sys.modules, "cv2", module)
         return cap
@@ -125,6 +137,103 @@ def test_connect_raises_when_device_yields_no_frame(fake_cv2):
     with pytest.raises(RuntimeError) as exc:
         src.connect()
     assert "no frame" in str(exc.value)
+
+
+# ------------------------------------------------------- capture backend probe
+
+
+def test_backend_fallback_finds_a_backend_that_delivers_frames(monkeypatch):
+    """Windows UVC: a backend can open the device yet never deliver a frame.
+
+    The probe must fall through to the next backend and report the one it
+    actually used - here DSHOW (tried first on Windows) stalls, MSMF works.
+    """
+    tries = []
+
+    class _Stalling(FakeCapture):
+        def read(self):
+            self.reads += 1
+            return False, None
+
+    class _Working(FakeCapture):
+        pass
+
+    stalling, working = _Stalling(open_ok=True), _Working(open_ok=True, frames=5)
+    module = types.ModuleType("cv2")
+    module.CAP_ANY = 0
+    module.CAP_MSMF = 1400
+    module.CAP_DSHOW = 700
+    module.CAP_PROP_FPS = 5
+    module.CAP_PROP_FRAME_WIDTH = 3
+    module.CAP_PROP_FRAME_HEIGHT = 4
+
+    def _video_capture(index, api=0):
+        tries.append(api)
+        return stalling if api == 700 else working
+
+    module.VideoCapture = _video_capture
+    monkeypatch.setitem(sys.modules, "cv2", module)
+    monkeypatch.setattr(webcam_camera.sys, "platform", "win32")
+
+    src = WebcamCameraSource(FakeRuntime(), device_index=0)
+    src.connect()
+    try:
+        assert tries == [700, 1400], f"DSHOW must be probed first on Windows, then MSMF: {tries}"
+        assert src.health()["capture_backend"] == "msmf"
+        assert src.health()["opened"] is True
+        assert src.read_frame() is not None
+    finally:
+        src.disconnect()
+    assert working.released is True
+    assert stalling.released is True, "a stalled attempt must be released"
+
+
+def test_all_backends_failing_names_them_in_the_error(monkeypatch):
+    class _Dead(FakeCapture):
+        def read(self):
+            return False, None
+
+    dead = _Dead(open_ok=True)
+    module = types.ModuleType("cv2")
+    module.CAP_ANY = 0
+    module.CAP_DSHOW = 700
+    module.CAP_PROP_FPS = 5
+    module.CAP_PROP_FRAME_WIDTH = 3
+    module.CAP_PROP_FRAME_HEIGHT = 4
+    module.VideoCapture = lambda index, api=0: dead
+    monkeypatch.setitem(sys.modules, "cv2", module)
+    monkeypatch.setattr(webcam_camera.sys, "platform", "win32")
+
+    src = WebcamCameraSource(FakeRuntime(), device_index=2)
+    with pytest.raises(RuntimeError) as exc:
+        src.connect()
+    message = str(exc.value)
+    assert "cannot open camera device index 2" in message
+    assert "dshow" in message and "any" in message
+    assert dead.released is True
+
+
+def test_explicit_backend_setting_is_honoured(monkeypatch):
+    tries = []
+    cap = FakeCapture(frames=5)
+    module = types.ModuleType("cv2")
+    module.CAP_ANY = 0
+    module.CAP_MSMF = 1400
+    module.CAP_DSHOW = 700
+    module.CAP_PROP_FPS = 5
+    module.CAP_PROP_FRAME_WIDTH = 3
+    module.CAP_PROP_FRAME_HEIGHT = 4
+    module.VideoCapture = lambda index, api=0: (tries.append(api), cap)[1]
+    monkeypatch.setitem(sys.modules, "cv2", module)
+    monkeypatch.setattr(webcam_camera.settings, "WEBCAM_CAPTURE_BACKENDS", "msmf")
+
+    src = WebcamCameraSource(FakeRuntime(), device_index=0)
+    src.connect()
+    try:
+        assert tries == [1400]
+        assert src.health()["capture_backend"] == "msmf"
+    finally:
+        src.disconnect()
 
 
 def test_connect_and_read_frame(fake_cv2):
@@ -187,6 +296,79 @@ def test_reconnect_is_bounded_never_infinite(fake_cv2, monkeypatch):
     assert attempts <= 2, "reconnect exceeded the configured budget"
     assert src.health()["restarts"] <= 2
     assert src.health()["error"]
+
+
+def test_reconnect_backoff_survives_a_transient_source_outage(fake_cv2, monkeypatch):
+    """A brief outage must not burn the whole restart budget instantly.
+
+    A phone app serving /video drops the stream when its screen locks or Wi-Fi
+    blips. With no delay between attempts, all 3 restarts were consumed in well
+    under a second, so a 2-3s hiccup permanently ended the session.
+    """
+    install, holder = fake_cv2
+    install(frames=2)
+    monkeypatch.setattr(
+        "app.live.webcam_camera.settings.WEBCAM_MAX_RESTARTS", 4, raising=False)
+    monkeypatch.setattr(
+        "app.live.webcam_camera.settings.WEBCAM_RECONNECT_BACKOFF_SECONDS", 0.05,
+        raising=False)
+    src = WebcamCameraSource(FakeRuntime(), device_index=0)
+    src.connect()
+    holder.captures[0]._fail_after = 0
+
+    # Drive on the attempt counter: connect() keeps failing, so the return
+    # value is not what advances the loop.
+    started = time.time()
+    attempts = 0
+    while src._restarts < 4:
+        src._reconnect()
+        attempts += 1
+        assert attempts < 20, "reconnect did not terminate"
+    elapsed = time.time() - started
+
+    assert attempts == 4
+    # Backoff is linear in the attempt number: 0.05 + 0.10 + 0.15 + 0.20.
+    assert elapsed >= 0.45, f"attempts fired too fast to ride out a hiccup ({elapsed:.3f}s)"
+
+
+def test_reconnect_backoff_wait_is_interrupted_by_stop(fake_cv2, monkeypatch):
+    """stop() during a long backoff must not wait out the full delay."""
+    install, holder = fake_cv2
+    install(frames=2)
+    monkeypatch.setattr(
+        "app.live.webcam_camera.settings.WEBCAM_RECONNECT_BACKOFF_SECONDS", 30.0,
+        raising=False)
+    src = WebcamCameraSource(FakeRuntime(), device_index=0)
+    src.connect()
+    holder.captures[0]._fail_after = 0
+    src.start()
+    time.sleep(0.05)
+    src.stop()
+    assert not src.running, "stop() hung waiting on the reconnect backoff"
+
+
+def test_restart_budget_is_restored_after_a_stable_recovery(fake_cv2, monkeypatch):
+    """Only *consecutive* failures should end a long session.
+
+    Without restoring the budget, a session that ran flawlessly for hours still
+    died on its Nth hiccup ever, which is the normal case for a phone stream.
+    """
+    install, holder = fake_cv2
+    install(frames=4)
+    monkeypatch.setattr(
+        "app.live.webcam_camera.settings.WEBCAM_RECONNECT_RESET_SECONDS", 60.0,
+        raising=False)
+    src = WebcamCameraSource(FakeRuntime(), device_index=0)
+    src.connect()
+    src._restarts = 2  # two hiccups earlier in the session
+
+    src._reconnected_at = time.time()
+    src._forget_recovered_outage(time.time() + 10.0)
+    assert src._restarts == 2, "budget restored before the source proved stable"
+
+    src._forget_recovered_outage(time.time() + 61.0)
+    assert src._restarts == 0, "budget not restored after a stable recovery"
+    assert src.health()["restarts"] == 0
 
 
 def test_midstream_device_failure_stops_session_without_hanging(fake_cv2, monkeypatch):
@@ -267,3 +449,38 @@ def test_api_still_accepts_droidcam_usb_transport(client, auth_headers):
     assert resp.status_code in (200, 201, 503), resp.text
     if resp.status_code != 503:
         client.post(f"/live/cameras/{camera_id}/stop", headers=auth_headers)
+
+
+def test_api_accepts_ipcam_transport_with_stream_url(client, auth_headers):
+    """POST /live/cameras/{id}/start accepts transport="ipcam" + stream_url."""
+    cam = client.post("/cameras", headers=auth_headers,
+                      json={"camera_name": "IPCam wiring", "location": "lab",
+                            "camera_type": "OTHER"})
+    assert cam.status_code in (200, 201), cam.text
+    camera_id = cam.json()["id"]
+
+    resp = client.post(f"/live/cameras/{camera_id}/start", headers=auth_headers,
+                       json={"transport": "ipcam",
+                             "stream_url": "http://10.5.176.115:8080/video",
+                             "fps_target": 10})
+    # An unreachable phone must fail loudly (503), never fake a session.
+    assert resp.status_code in (200, 201, 503), resp.text
+    if resp.status_code == 503:
+        assert "unavailable" in resp.json()["detail"].lower()
+    else:
+        client.post(f"/live/cameras/{camera_id}/stop", headers=auth_headers)
+
+
+def test_api_rejects_ipcam_without_stream_url(client, auth_headers, monkeypatch):
+    """ipcam with no URL anywhere must not silently open a local device."""
+    from app.core import config as config_module
+
+    monkeypatch.setattr(config_module.settings, "IPCAM_STREAM_URL", "", raising=False)
+    cam = client.post("/cameras", headers=auth_headers,
+                      json={"camera_name": "IPCam no URL", "location": "lab",
+                            "camera_type": "OTHER"})
+    camera_id = cam.json()["id"]
+    resp = client.post(f"/live/cameras/{camera_id}/start", headers=auth_headers,
+                       json={"transport": "ipcam"})
+    assert resp.status_code == 503
+    assert "stream url" in resp.json()["detail"].lower()

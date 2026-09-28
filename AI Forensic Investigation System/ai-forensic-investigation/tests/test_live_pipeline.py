@@ -104,6 +104,48 @@ def test_ingestion_rejects_oversized_frames():
     assert ing.buffer.count() == 0
 
 
+def test_default_frame_cap_admits_a_1080p_and_4k_frame():
+    """Regression: the 4 MB default silently starved every 1080p source.
+
+    A 1920x1080 BGR frame is ~6.2 MB, so each frame was rejected as oversized:
+    the session still reported LIVE and counted ``received`` frames, but
+    nothing was ever sampled, so YOLO, tracking and evidence never ran.
+    """
+    from app.core.config import settings
+
+    frame_1080p = np.zeros((1080, 1920, 3), dtype=np.uint8)  # 6_220_800 bytes
+    frame_4k = np.zeros((2160, 3840, 3), dtype=np.uint8)  # 24_883_200 bytes
+    assert frame_1080p.nbytes > 4 * 1024 * 1024
+    assert settings.LIVE_MAX_FRAME_BYTES > frame_4k.nbytes
+
+    ing = _ingestion(max_bytes=settings.LIVE_MAX_FRAME_BYTES, clock=fake_clock_at(1000.0))
+    for i, frame in enumerate((frame_1080p, frame_4k)):
+        assert ing.ingest(frame, i * 0.5) is True, f"frame {i} was rejected as oversized"
+    assert ing.rejected == 0
+    assert ing.sampled == 2
+    assert ing.buffer.count() == 2
+
+
+def test_rejection_counters_are_reported_in_the_session_snapshot():
+    """A starved session must be diagnosable from status, not silent."""
+    from app.live.manager import LiveSessionRuntime
+
+    runtime = LiveSessionRuntime(
+        camera_id=1, camera_name="probe", started_by_user_id=1, transport="ipcam"
+    )
+    big = np.zeros((1080, 1920, 3), dtype=np.uint8)
+    small = np.zeros((8, 8, 3), dtype=np.uint8)
+    # The cap is read by the ingestion object, so shrink it there.
+    runtime.ingestion._max_frame_bytes = 1024
+    runtime.ingestion.ingest(big, 1000.0)
+    runtime.ingestion.ingest(small, 1000.5)
+
+    snap = runtime.snapshot()
+    assert snap["frames_rejected"] == 1
+    assert snap["frames_sampled"] == 1
+    assert snap["max_frame_bytes"] == 1024
+
+
 def test_ingestion_rejects_invalid_params():
     with pytest.raises(ValueError):
         FrameIngestion(sampler=FrameSampler(5.0), buffer=RollingFrameBuffer(), source_fps_cap=0)

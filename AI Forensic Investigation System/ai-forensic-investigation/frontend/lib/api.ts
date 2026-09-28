@@ -114,6 +114,8 @@ export type LiveStatus = {
 export type LiveSourceHealth = {
   source?: string;
   device_index?: number;
+  stream_url?: string | null;
+  capture_backend?: string | null;
   opened?: boolean;
   alive?: boolean;
   running?: boolean;
@@ -547,6 +549,14 @@ export type Policy = {
   status?: string | null;
   created_at?: string | null;
   chunk_count: number;
+};
+
+export type PolicyDeleteResult = {
+  policy_id: string;
+  document_name: string;
+  deleted_chunks: number;
+  deleted_vectors: number;
+  file_deleted: boolean;
 };
 
 export type PolicyChunk = {
@@ -1268,6 +1278,10 @@ export const api = {
   policySections: (policyId: string) => request<PolicyChunk[]>(`/policies/${policyId}/sections`),
   uploadPolicy: (form: FormData) =>
     request<Policy>("/policies/upload", { method: "POST", body: form }),
+  deletePolicy: (policyId: string) =>
+    request<PolicyDeleteResult>(`/policies/${encodeURIComponent(policyId)}`, {
+      method: "DELETE",
+    }),
   searchPolicies: (query: string) =>
     request<PolicySearchHit[]>("/policies/search", {
       method: "POST",
@@ -1390,6 +1404,7 @@ export const api = {
       buffer_max_frames?: number;
       video_path?: string;
       device_index?: number;
+      stream_url?: string;
     }
   ) =>
     request<CameraSession>(`/live/cameras/${cameraId}/start`, {
@@ -1525,3 +1540,4 @@ export const api = {
     request<ForensicReportMeta & { content: Record<string, unknown> }>(`/runs/${runId}/report`),
   forensicReportFile: (runId: number) => downloadBlob(`/runs/${runId}/report/file`),
 };
+

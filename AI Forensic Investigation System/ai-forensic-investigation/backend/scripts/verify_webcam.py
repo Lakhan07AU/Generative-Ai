@@ -28,24 +28,37 @@ def record(name: str, ok: bool, detail: str = "") -> bool:
 
 
 def probe(max_index: int = 3) -> dict[int, dict]:
-    """Open indices 0..max_index and report which really deliver frames."""
+    """Open indices 0..max_index and report which really deliver frames.
+
+    Every configured capture backend is tried, because OpenCV's default backend
+    is not reliable across platforms: on Windows a UVC camera opens under
+    ``CAP_ANY``/``CAP_MSMF`` and then never yields a frame, while ``CAP_DSHOW``
+    works. A device therefore only counts as found if a real frame arrived.
+    """
     import cv2
 
+    from app.live.webcam_camera import _resolve_backends
+
     found: dict[int, dict] = {}
+    backends = _resolve_backends(cv2, None)
     for index in range(max_index + 1):
-        cap = cv2.VideoCapture(index)
-        info: dict = {"opened": False, "frames": 0, "size": None, "fps": None}
-        try:
-            if cap is not None and cap.isOpened():
+        info: dict = {"opened": False, "frames": 0, "size": None, "fps": None, "backend": None}
+        for name, api in backends:
+            cap = cv2.VideoCapture(index, api)
+            try:
+                if cap is None or not cap.isOpened():
+                    continue
                 info["opened"] = True
                 ok, frame = cap.read()
-                if ok and frame is not None:
+                if ok and frame is not None and getattr(frame, "size", 0) > 0:
                     info["frames"] = 1
                     info["size"] = (int(frame.shape[1]), int(frame.shape[0]))
                     info["fps"] = float(cap.get(cv2.CAP_PROP_FPS) or 0.0)
-        finally:
-            if cap is not None:
-                cap.release()
+                    info["backend"] = name
+                    break
+            finally:
+                if cap is not None:
+                    cap.release()
         if info["frames"]:
             found[index] = info
     return found
@@ -74,10 +87,13 @@ def main() -> int:
         found = probe(3)
         if found:
             for idx, info in found.items():
-                print(f"  device {idx}: {info['size'][0]}x{info['size'][1]} @ {info['fps']} fps")
+                print(
+                    f"  device {idx}: {info['size'][0]}x{info['size'][1]} "
+                    f"@ {info['fps']} fps (backend={info['backend']})"
+                )
             print("RESULT: DEVICES FOUND")
             return 0
-        print("  no capture device produced a frame on indices 0..3")
+        print("  no capture device produced a frame on indices 0-3 with any capture backend")
         print("RESULT: NO DEVICE")
         return 1
 
@@ -107,13 +123,27 @@ def main() -> int:
         print("\nRESULT: FAIL")
         return 1
 
-    cap = cv2.VideoCapture(device)
-    opened = cap is not None and cap.isOpened()
-    record("Camera opened", opened, f"index={device}")
+    from app.live.webcam_camera import _resolve_backends
+
+    cap = None
+    used_backend = None
+    for name, api in _resolve_backends(cv2, None):
+        candidate = cv2.VideoCapture(device, api)
+        if candidate is None or not candidate.isOpened():
+            if candidate is not None:
+                candidate.release()
+            continue
+        ok, frame = candidate.read()
+        if ok and frame is not None and getattr(frame, "size", 0) > 0:
+            cap = candidate
+            used_backend = name
+            break
+        candidate.release()
+    opened = cap is not None
+    record("Camera opened", opened, f"index={device} backend={used_backend}")
     if not opened:
-        if cap is not None:
-            cap.release()
         print("  hint: run with --probe to list available capture devices")
+        print("  hint: on Windows try WEBCAM_CAPTURE_BACKENDS=dshow,msmf,any")
         print("\nRESULT: FAIL")
         return 1
 

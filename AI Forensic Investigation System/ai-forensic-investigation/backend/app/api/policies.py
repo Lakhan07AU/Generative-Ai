@@ -6,6 +6,7 @@ Routes:
   GET  /policies/{policy_id}    - policy + its sections
   GET  /policies/{policy_id}/sections - view policy sections
   POST /policies/search         - semantic search across policies
+  DELETE /policies/{policy_id}  - delete a policy + its chunks, vectors and file (ADMIN)
 """
 
 import os
@@ -15,9 +16,9 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.database import models
-from app.schemas.rag import PolicyOut, PolicyChunkOut, PolicySearchHit
+from app.schemas.rag import PolicyOut, PolicyChunkOut, PolicySearchHit, PolicyDeleteOut
 from app.auth.deps import get_current_user, require_roles
-from app.rag.policy_rag import ingest_policy, search_policies, ALLOWED_EXTENSIONS
+from app.rag.policy_rag import ingest_policy, search_policies, delete_policy, ALLOWED_EXTENSIONS
 from app.storage.service import storage
 
 router = APIRouter(prefix="/policies", tags=["policies"])
@@ -114,6 +115,24 @@ def get_policy_sections(
     if not policy:
         raise HTTPException(status_code=404, detail="Policy not found")
     return sorted(policy.chunks, key=lambda c: (c.chunk_index or 0))
+
+
+@router.delete("/{policy_id}", response_model=PolicyDeleteOut)
+def remove_policy(
+    policy_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_roles("ADMIN")),
+):
+    """Delete a policy document, its chunks, its Qdrant vectors and its file.
+
+    The stored original and the indexed vectors are removed too, so a deleted
+    policy can no longer ground any later assessment. Findings that referenced
+    the policy are kept, with the reference cleared.
+    """
+    result = delete_policy(policy_id, user_id=current_user.id, db=db)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    return result
 
 
 @router.post("/search", response_model=list[PolicySearchHit])

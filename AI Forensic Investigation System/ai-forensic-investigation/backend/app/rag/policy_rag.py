@@ -17,6 +17,8 @@ import re
 import tempfile
 from typing import Any, Optional
 
+from sqlalchemy.orm import Session
+
 from app.core.config import settings
 from app.database import models
 from app.database.session import SessionLocal
@@ -24,6 +26,7 @@ from app.ai import provider
 from app.ai.embeddings import embeddings
 from app.ai.qdrant_service import qdrant
 from app.rag.video_rag import analyze_query, retrieve_evidence, evidence_cards
+from app.storage.service import storage
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +184,100 @@ def ingest_policy(filename: str, data: bytes, user_id: int | None = None, storag
         return {"policy_id": policy.policy_id, "document_name": policy.document_name, "chunks": len(chunks)}
     finally:
         db.close()
+
+
+def delete_policy(policy_id: str, user_id: int | None = None, db: Optional[Session] = None) -> dict:
+    """Remove a policy document and everything derived from it.
+
+    Tears down all three copies of the content so a deleted policy cannot
+    still influence assessments:
+
+    1. the Qdrant vectors (one point per ``PolicyChunk.id``, deleted *before*
+       the DB rows so the ids are still known),
+    2. the stored original file,
+    3. the database rows (chunks cascade via ``delete-orphan``).
+
+    Returns a summary dict, or ``None`` when the policy does not exist. The
+    caller owns the transaction; ``db`` is closed only when this function
+    opened it.
+    """
+    own_session = db is None
+    session = db or SessionLocal()
+    try:
+        policy = (
+            session.query(models.PolicyDocument)
+            .filter(models.PolicyDocument.policy_id == policy_id)
+            .first()
+        )
+        if policy is None:
+            return None
+
+        document_id = policy.id
+        document_name = policy.document_name
+        filename = policy.filename
+        storage_path = policy.storage_path
+        chunk_ids = [
+            c.id
+            for c in session.query(models.PolicyChunk)
+            .filter(models.PolicyChunk.policy_id == document_id)
+            .all()
+        ]
+
+        # 1. Vector store first: the point ids are the chunk primary keys.
+        deleted_vectors = 0
+        for chunk_id in chunk_ids:
+            try:
+                qdrant.delete(settings.QDRANT_COLLECTION_POLICY, chunk_id)
+                deleted_vectors += 1
+            except Exception as exc:  # noqa: BLE001 - a stale vector must not block the delete
+                logger.warning(
+                    "policy_delete: could not remove Qdrant point %s: %s", chunk_id, exc
+                )
+
+        # 2. Stored original (best effort - the row must go even if the file
+        #    is already gone or the object store is unreachable).
+        file_deleted = False
+        if storage_path:
+            try:
+                file_deleted = bool(storage.delete(storage_path))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(
+                    "policy_delete: could not remove stored file %s: %s", storage_path, exc
+                )
+
+        # 3. Findings reference the document; keep them but drop the dangling
+        #    link rather than cascading the deletion of investigation results.
+        session.query(models.Finding).filter(models.Finding.policy_id == document_id).update(
+            {"policy_id": None}, synchronize_session=False
+        )
+
+        # 4. Chunks cascade (relationship is delete-orphan).
+        session.delete(policy)
+        session.commit()
+
+        from app.audit.service import record_audit
+
+        record_audit(
+            session,
+            "policy_delete",
+            user_id=user_id,
+            entity_type="policy",
+            entity_id=document_id,
+            details=(
+                f"policy_id={policy_id} document={document_name} filename={filename} "
+                f"chunks={len(chunk_ids)} vectors={deleted_vectors} file_removed={file_deleted}"
+            ),
+        )
+        return {
+            "policy_id": policy_id,
+            "document_name": document_name,
+            "deleted_chunks": len(chunk_ids),
+            "deleted_vectors": deleted_vectors,
+            "file_deleted": file_deleted,
+        }
+    finally:
+        if own_session:
+            session.close()
 
 
 def _next_policy_id(db) -> str:

@@ -135,6 +135,30 @@ def test_qdrant_backend_name_and_point_lifecycle():
     assert qdrant.point_exists("video_evidence", "EVD-X1") is False
 
 
+def test_qdrant_delete_actually_removes_a_point():
+    """Regression: the in-memory store keyed ids as strings while delete passed
+    the raw value, so every delete was a silent no-op ("4" != 4)."""
+    from app.ai.qdrant_service import qdrant
+
+    qdrant._backend = "memory"
+    qdrant._mem = {}
+
+    # Integer id (the policy-chunk case).
+    qdrant.index("policy_chunks", 7, [0.1] * qdrant.sim, {"policy_id": 1})
+    assert qdrant.point_exists("policy_chunks", 7) is True
+    qdrant.delete("policy_chunks", 7)
+    assert qdrant.point_exists("policy_chunks", 7) is False
+
+    # String id (the evidence case).
+    qdrant.index_evidence("EVD-D1", [0.2] * qdrant.sim, {"event_type": "test"})
+    assert qdrant.point_exists("video_evidence", "EVD-D1") is True
+    qdrant.delete("video_evidence", "EVD-D1")
+    assert qdrant.point_exists("video_evidence", "EVD-D1") is False
+
+    # Deleting something that is not there must not raise.
+    qdrant.delete("policy_chunks", 999)
+
+
 def test_storage_backend_name_and_clear(tmp_path):
     from app.storage.service import LocalStorageService
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Upload, FileText, Search, Loader2, FileSearch, ChevronDown } from "lucide-react";
+import { Upload, FileText, Search, Loader2, FileSearch, ChevronDown, Trash2 } from "lucide-react";
 import { api, Policy, PolicyChunk, PolicySearchHit } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { ProtectedShell } from "@/components/protected-shell";
@@ -20,6 +20,8 @@ export default function PoliciesPage() {
   const [hits, setHits] = useState<PolicySearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -68,6 +70,32 @@ export default function PoliciesPage() {
       setOpenId(p.policy_id);
     } catch (e) {
       setError((e as Error).message);
+    }
+  }
+
+  async function doDelete(p: Policy) {
+    setDeletingId(p.policy_id);
+    setError("");
+    setOk("");
+    try {
+      const res = await api.deletePolicy(p.policy_id);
+      // Drop the row locally as well so a stale list can never be shown.
+      setPolicies((prev) => prev.filter((x) => x.policy_id !== p.policy_id));
+      setExpanded((prev) => {
+        const next = { ...prev };
+        delete next[p.policy_id];
+        return next;
+      });
+      if (openId === p.policy_id) setOpenId(null);
+      setOk(
+        `Deleted "${p.document_name}" (${p.policy_id}): ${res.deleted_chunks} chunks and ` +
+          `${res.deleted_vectors} indexed vectors removed.`
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setConfirmId(null);
+      setDeletingId(null);
     }
   }
 
@@ -183,6 +211,52 @@ export default function PoliciesPage() {
               <Badge variant={openId === p.policy_id ? "default" : "muted"}>
                 {openId === p.policy_id ? "Hide" : "Sections"}
               </Badge>
+              {isAdmin &&
+                (confirmId === p.policy_id ? (
+                  <span
+                    className="flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-xs font-semibold text-red-700">Delete?</span>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => doDelete(p)}
+                      disabled={deletingId === p.policy_id}
+                    >
+                      {deletingId === p.policy_id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                      {deletingId === p.policy_id ? "Deleting..." : "Confirm"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConfirmId(null)}
+                      disabled={deletingId === p.policy_id}
+                    >
+                      Cancel
+                    </Button>
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    title={`Delete ${p.policy_id}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setError("");
+                      setOk("");
+                      setConfirmId(p.policy_id);
+                    }}
+                    disabled={deletingId !== null}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                    Delete
+                  </Button>
+                ))}
               <ChevronDown
                 className={`h-4 w-4 text-slate-400 transition-transform ${
                   openId === p.policy_id ? "rotate-180" : ""

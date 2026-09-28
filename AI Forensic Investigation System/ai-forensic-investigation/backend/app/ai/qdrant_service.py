@@ -250,7 +250,10 @@ class QdrantService:
                 points_selector=qm.PointIdsList(points=[_canonical_point_id(point_id)]),
             )
         else:
-            self._store(collection).delete(point_id)
+            # Ids are stored as strings by the in-memory fallback (see index),
+            # so normalise here too - otherwise "4" != 4 and the delete is a
+            # silent no-op.
+            self._store(collection).delete(str(point_id))
 
     def count(self, collection: str) -> int:
         self.ensure_collections()

@@ -680,8 +680,14 @@ class LiveSessionRuntime:
                     detection_metrics = {**detection_metrics, **self.detection.model_info()}
             except Exception:  # noqa: BLE001 - metrics must never break status
                 pass
-        detection_recent = (
-            len(self.detection.recent_results()) if self.detection is not None else 0
+        # ``recent_results()`` returns recent *frames*, including frames that
+        # contained no detections at all. Reporting len(frames) here saturated
+        # at the deque bound and claimed e.g. "200 detections" on a session
+        # where the model had actually found nothing, so count the detections
+        # the frames actually carry.
+        recent_items = self.detection.recent_results() if self.detection is not None else []
+        detection_recent = sum(
+            len(item.get("detections") or []) for item in recent_items
         )
         camera_source = getattr(self, "camera_source", None)
         source_health = self.source.health() if self.source is not None else None
@@ -700,6 +706,11 @@ class LiveSessionRuntime:
             "max_frames": self.max_frames,
             "frames_received": self.ingestion.received,
             "frames_sampled": self.ingestion.sampled,
+            "frames_rejected": self.ingestion.rejected,
+            "frames_decimated": self.ingestion.decimated,
+            "max_frame_bytes": getattr(
+                self.ingestion, "_max_frame_bytes", self.max_frame_bytes
+            ),
             "frames_buffered": self.buffer.count(),
             "buffer_start": self.buffer.oldest_timestamp,
             "buffer_end": self.buffer.newest_timestamp,

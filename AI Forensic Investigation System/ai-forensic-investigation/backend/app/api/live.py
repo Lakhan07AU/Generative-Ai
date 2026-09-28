@@ -27,6 +27,7 @@ from app.auth.security import decode_access_token
 from app.audit.service import record_audit
 from app.live.manager import SessionStatus, manager
 from app.live.synthetic import FrameSimulationFeeder
+from app.live.ipcam_camera import IpCameraSource
 from app.live.usb_camera import UsbCameraSource
 from app.live.webcam_camera import WebcamCameraSource
 from app.live.video_feeder import VideoFileFeeder
@@ -141,7 +142,7 @@ def start_live_camera(
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     transport = payload.transport or "webrtc"
-    supported = ("webrtc", "simulation", "file", "droidcam_usb", "webcam")
+    supported = ("webrtc", "simulation", "file", "droidcam_usb", "webcam", "ipcam")
     if transport not in supported:
         raise HTTPException(status_code=422, detail=f"Unsupported transport: {transport}")
     runtime = _start_runtime(db, camera, current_user, payload)
@@ -165,24 +166,31 @@ def start_live_camera(
         runtime.video_feeder = feeder
         feeder.start()
         runtime.mark_live()
-    if transport in ("droidcam_usb", "webcam"):
-        # Laptop webcam and DroidCam/USB share one OpenCV capture implementation
-        # (app/live/webcam_camera.py -> LocalOpenCVCameraSource) and one ingest
-        # path; only the transport name and defaults differ.
-        source_cls = WebcamCameraSource if transport == "webcam" else UsbCameraSource
-        label = "Webcam" if transport == "webcam" else "USB/DroidCam"
-        source = source_cls(
-            runtime,
-            device_index=payload.device_index,
-            fps_target=payload.fps_target,
-        )
-        source.on_finished = lambda: _on_source_finished(runtime)
+    if transport in ("droidcam_usb", "webcam", "ipcam"):
+        # Laptop webcam, DroidCam/USB and a phone IP camera share one OpenCV
+        # capture implementation (app/live/webcam_camera.py ->
+        # LocalOpenCVCameraSource) and one ingest path; only the capture target
+        # (device index or stream URL), the defaults prefix and the transport
+        # name differ.
+        if transport == "webcam":
+            source_cls, label = WebcamCameraSource, "Webcam"
+        elif transport == "droidcam_usb":
+            source_cls, label = UsbCameraSource, "USB/DroidCam"
+        else:
+            source_cls, label = IpCameraSource, "IP camera"
         try:
+            source = source_cls(
+                runtime,
+                device_index=payload.device_index,
+                fps_target=payload.fps_target,
+                stream_url=payload.stream_url if transport == "ipcam" else None,
+            )
+            source.on_finished = lambda: _on_source_finished(runtime)
             source.start()
-        except Exception as exc:  # noqa: BLE001 - device/OpenCV failure
+        except Exception as exc:  # noqa: BLE001 - device/OpenCV/network/config failure
             runtime.mark_error(f"{label} capture failed: {exc}")
             manager.stop(camera.id)
-            raise HTTPException(status_code=503, detail=f"{label} camera unavailable: {exc}")
+            raise HTTPException(status_code=503, detail=f"{label} unavailable: {exc}")
         runtime.camera_source = source
         runtime.mark_live()
     return _camera_session_out(runtime)
