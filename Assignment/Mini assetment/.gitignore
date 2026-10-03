@@ -1,8 +1,0 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-cloned_repos/
-.ruff_cache/
-.streamlit/secrets.toml
-*.log
