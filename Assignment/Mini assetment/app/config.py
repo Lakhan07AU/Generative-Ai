@@ -19,6 +19,14 @@ MAX_TOTAL_CHARS = int(os.environ.get("MAX_TOTAL_CHARS", "26000"))
 LLM_TIMEOUT_SECONDS = int(os.environ.get("LLM_TIMEOUT_SECONDS", "900"))
 LLM_CONTEXT_TOKENS = int(os.environ.get("LLM_CONTEXT_TOKENS", "8192"))
 
+LLM_BACKEND = os.environ.get("LLM_BACKEND", "auto").strip().lower()
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.groq.com/openai/v1").rstrip("/")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY") or os.environ.get("GROQ_API_KEY")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "llama-3.1-8b-instant")
+
+JOB_TTL_SECONDS = int(os.environ.get("JOB_TTL_SECONDS", "3600"))
+MAX_JOBS = int(os.environ.get("MAX_JOBS", "20"))
+
 GIT_CANDIDATES = [
     TOOLS_DIR / "MinGit" / "cmd" / "git.exe",
     TOOLS_DIR / "MinGit" / "mingw64" / "bin" / "git.exe",

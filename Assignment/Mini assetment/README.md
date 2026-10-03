@@ -104,8 +104,14 @@ Optional: run `Smoke test (end-to-end)` from the F5 dropdown to verify the whole
 
 | Method | Endpoint       | Body                                      | Result                                  |
 |--------|----------------|-------------------------------------------|-----------------------------------------|
-| GET    | `/api/health`  | –                                         | git / ollama status, available models   |
+| GET    | `/api/health`  | –                                         | git / LLM backend status, models        |
 | POST   | `/api/explain` | `{"repo_url": "https://github.com/u/r"}`  | explanation + analysed files + metadata |
+| POST   | `/api/jobs`    | same as `/api/explain`                    | `202` + `{"job_id": "..."}` (async)     |
+| GET    | `/api/jobs/{id}` | –                                       | `queued/running/done/error` + result    |
+
+`/api/explain` blocks until the answer is ready. `/api/jobs` returns immediately and the caller
+polls `GET /api/jobs/{id}` — this is what the frontend uses, because proxies (e.g. Render) drop
+requests that stay open too long.
 
 Example:
 
@@ -124,23 +130,79 @@ python scripts\smoke_test.py                      # default repo: pallets/click
 python scripts\smoke_test.py https://github.com/you/your-repo
 ```
 
-It checks `/api/health`, calls `/api/explain` and then drives the Streamlit page itself,
-printing the rendered Markdown. Exit message: `ALL SMOKE TESTS PASSED`.
+It checks `/api/health`, calls `/api/explain`, runs one job through `/api/jobs` and then drives
+the Streamlit page itself, printing the rendered Markdown. Exit message: `ALL SMOKE TESTS PASSED`.
 
 ## Configuration (environment variables)
 
 | Variable                | Default                                    | Purpose                                  |
 |-------------------------|--------------------------------------------|------------------------------------------|
+| `LLM_BACKEND`           | `auto`                                     | `auto` / `ollama` / `openai`             |
+| `OPENAI_BASE_URL`       | `https://api.groq.com/openai/v1`           | Any OpenAI-compatible API                |
+| `OPENAI_API_KEY`        | – (or `GROQ_API_KEY`)                      | Key for the hosted API                   |
+| `OPENAI_MODEL`          | `llama-3.1-8b-instant`                     | Hosted model name                        |
 | `OLLAMA_HOST`           | `http://127.0.0.1:11434`                   | Ollama server address                    |
-| `OLLAMA_MODEL`          | `qwen2.5:1.5b`                             | Preferred model                          |
+| `OLLAMA_MODEL`          | `qwen2.5:1.5b`                             | Preferred local model                    |
 | `MAX_FILES`             | `50`                                       | Max source files sent to the LLM         |
 | `MAX_FILE_CHARS`        | `4000`                                     | Truncation limit per file                |
 | `MAX_TOTAL_CHARS`       | `26000`                                    | Total code budget for one prompt         |
 | `LLM_CONTEXT_TOKENS`    | `8192`                                     | Ollama context window                    |
 | `BACKEND_URL`           | `http://127.0.0.1:8001`                    | Backend address used by the frontend     |
 
-Other suggested models: `qwen2.5:0.5b` (fastest), `phi3:mini`, `llama3.2:1b`, `gemma2:2b`.
+Other suggested local models: `qwen2.5:0.5b` (fastest), `phi3:mini`, `llama3.2:1b`, `gemma2:2b`.
 Pull one with `ollama pull <model>` and pick it in the frontend dropdown.
+
+## LLM backends
+
+`LLM_BACKEND` picks the engine:
+
+- `auto` (default) — use **Ollama when it is running**, otherwise fall back to the hosted
+  API if `OPENAI_API_KEY` is set.
+- `ollama` — force the local model (assignment default).
+- `openai` — force the hosted, OpenAI-compatible API.
+
+The hosted path works with any OpenAI-compatible provider. Groq's free tier (no credit card,
+~30 requests/minute) is the default:
+
+1. Sign up at <https://console.groq.com> → **API Keys** → create a key.
+2. Set `OPENAI_API_KEY=<your key>` (locally or in Render).
+
+Locally you can test the hosted path without a key by pointing it at your own Ollama:
+
+```powershell
+$env:LLM_BACKEND = "openai"
+$env:OPENAI_BASE_URL = "http://127.0.0.1:11434/v1"
+$env:OPENAI_MODEL = "qwen2.5:1.5b"
+$env:MAX_TOTAL_CHARS = "9000"
+```
+
+(`MAX_TOTAL_CHARS` is smaller here because Ollama's OpenAI endpoint uses its own default
+context window instead of the `num_ctx` this project passes on the native Ollama path.
+Hosted APIs like Groq have 100k+ token contexts, so the normal budget works there.)
+
+## Deploy free on Render
+
+The app ships with a `render.yaml` blueprint and a `Dockerfile`, so it deploys on Render's
+**Free** plan (0.1 vCPU / 512 MB, 750 free hours/month). The free instance cannot run Ollama,
+so the deployed demo uses the free Groq API — the local build keeps using Ollama.
+
+1. Push this repository to GitHub.
+2. Get a free API key: <https://console.groq.com> → API Keys.
+3. On <https://dashboard.render.com> → **New + → Blueprint** → pick the GitHub repo
+   (it reads `render.yaml`).
+4. When prompted for `OPENAI_API_KEY`, paste your Groq key (stored as a secret).
+5. Deploy. The app is served on the `onrender.com` URL (Streamlit on `$PORT`, FastAPI
+   internally on `8001`).
+
+Notes:
+
+- Free instances spin down after 15 minutes without traffic; the first request after that
+  takes ~1 minute to wake up.
+- Smoke-test the deploy: `python scripts\smoke_test.py https://github.com/pallets/click`
+  after setting `BACKEND_URL=https://<your-app>.onrender.com` — the test also runs against
+  a remote backend.
+- To run the same image locally: `docker build -t repo-explainer .` then
+  `docker run -p 8501:8501 -e OPENAI_API_KEY=... repo-explainer`.
 
 ## Notes
 

@@ -13,7 +13,7 @@ class LLMError(Exception):
     pass
 
 
-def is_available(host: str | None = None) -> bool:
+def is_ollama_available(host: str | None = None) -> bool:
     try:
         response = requests.get(f"{host or config.OLLAMA_HOST}/api/tags", timeout=5)
         return response.status_code == 200
@@ -21,7 +21,28 @@ def is_available(host: str | None = None) -> bool:
         return False
 
 
+def backend(host: str | None = None) -> str:
+    if config.LLM_BACKEND in ("ollama", "openai"):
+        return config.LLM_BACKEND
+    if is_ollama_available(host):
+        return "ollama"
+    if config.OPENAI_API_KEY:
+        return "openai"
+    return "none"
+
+
+def is_available(host: str | None = None) -> bool:
+    active = backend(host)
+    if active == "ollama":
+        return True
+    if active == "openai":
+        return bool(config.OPENAI_API_KEY)
+    return False
+
+
 def list_models(host: str | None = None) -> list[str]:
+    if backend(host) == "openai":
+        return [config.OPENAI_MODEL]
     try:
         response = requests.get(f"{host or config.OLLAMA_HOST}/api/tags", timeout=5)
         response.raise_for_status()
@@ -31,6 +52,8 @@ def list_models(host: str | None = None) -> list[str]:
 
 
 def pick_model(preferred: str | None = None, host: str | None = None) -> str:
+    if backend(host) == "openai":
+        return preferred or config.OPENAI_MODEL
     models = list_models(host)
     if preferred:
         if any(model == preferred or model.split(":")[0] == preferred for model in models):
@@ -63,8 +86,86 @@ def generate(
     num_predict: int = 900,
     repeat_penalty: float = 1.15,
 ) -> tuple[str, str]:
+    active = backend(host)
+    if active == "openai":
+        return _generate_openai(prompt, model=model, system=system, temperature=temperature, num_predict=num_predict)
+    if active == "none":
+        raise LLMError(
+            f"No LLM is available: Ollama is not reachable at {config.OLLAMA_HOST} and OPENAI_API_KEY is not set. "
+            "Start Ollama ('ollama serve') or set OPENAI_API_KEY (free key: https://console.groq.com/keys)."
+        )
+    return _generate_ollama(
+        prompt,
+        model=model,
+        system=system,
+        host=host,
+        temperature=temperature,
+        num_predict=num_predict,
+        repeat_penalty=repeat_penalty,
+    )
+
+
+def _generate_openai(
+    prompt: str,
+    model: str | None,
+    system: str,
+    temperature: float,
+    num_predict: int,
+) -> tuple[str, str]:
+    key = config.OPENAI_API_KEY
+    if not key:
+        raise LLMError("OPENAI_API_KEY is not set. Get a free key at https://console.groq.com/keys")
+    selected = model or config.OPENAI_MODEL
+    payload = {
+        "model": selected,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": temperature,
+        "max_tokens": num_predict,
+        "top_p": 0.9,
+    }
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    try:
+        response = requests.post(
+            f"{config.OPENAI_BASE_URL}/chat/completions",
+            json=payload,
+            headers=headers,
+            timeout=config.LLM_TIMEOUT_SECONDS,
+        )
+    except requests.Timeout as exc:
+        raise LLMError(f"The LLM API did not respond within {config.LLM_TIMEOUT_SECONDS} seconds.") from exc
+    except requests.RequestException as exc:
+        raise LLMError(f"Could not reach the LLM API at {config.OPENAI_BASE_URL}: {exc}") from exc
+    if response.status_code in (401, 403):
+        raise LLMError(
+            f"The LLM API rejected the API key (HTTP {response.status_code}). Check the OPENAI_API_KEY value."
+        )
+    if response.status_code == 429:
+        raise LLMError("The free LLM API rate limit was reached (HTTP 429). Wait a moment and try again.")
+    if response.status_code != 200:
+        raise LLMError(f"The LLM API returned HTTP {response.status_code}: {response.text[:400]}")
+    try:
+        text = response.json()["choices"][0]["message"]["content"].strip()
+    except (ValueError, KeyError, IndexError, TypeError) as exc:
+        raise LLMError("The LLM API returned a response that could not be parsed.") from exc
+    if not text:
+        raise LLMError("The LLM API returned an empty explanation.")
+    return text, selected
+
+
+def _generate_ollama(
+    prompt: str,
+    model: str | None,
+    system: str,
+    host: str | None,
+    temperature: float,
+    num_predict: int,
+    repeat_penalty: float,
+) -> tuple[str, str]:
     host = host or config.OLLAMA_HOST
-    if not is_available(host):
+    if not is_ollama_available(host):
         raise LLMError(f"Ollama is not reachable at {host}. Start it with 'ollama serve' or open the Ollama app.")
     selected = pick_model(model, host)
     payload = {

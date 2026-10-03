@@ -5,6 +5,8 @@ import requests
 import streamlit as st
 
 API_URL = os.environ.get("BACKEND_URL", "http://127.0.0.1:8001").rstrip("/")
+POLL_INTERVAL_SECONDS = 2
+JOB_TIMEOUT_SECONDS = int(os.environ.get("JOB_TIMEOUT_SECONDS", "900"))
 
 st.set_page_config(
     page_title="GitHub Repo Explainer",
@@ -22,21 +24,48 @@ def fetch_health() -> dict | None:
         return None
 
 
-def explain_repo(repo_url: str, model: str | None) -> dict:
-    payload = {"repo_url": repo_url}
-    if model:
-        payload["model"] = model
-    response = requests.post(f"{API_URL}/api/explain", json=payload, timeout=1200)
+def _read_error(response: requests.Response) -> str:
     try:
         data = response.json()
     except ValueError:
-        data = {"detail": response.text[:500]}
+        return response.text[:500]
+    detail = data.get("detail", "Unknown error")
+    if isinstance(detail, list):
+        detail = "; ".join(str(item) for item in detail)
+    return str(detail)
+
+
+def submit_job(repo_url: str, model: str | None) -> str:
+    payload = {"repo_url": repo_url}
+    if model:
+        payload["model"] = model
+    response = requests.post(f"{API_URL}/api/jobs", json=payload, timeout=60)
+    if response.status_code != 202:
+        raise RuntimeError(_read_error(response))
+    return response.json()["job_id"]
+
+
+def get_job(job_id: str) -> dict:
+    response = requests.get(f"{API_URL}/api/jobs/{job_id}", timeout=60)
     if response.status_code != 200:
-        detail = data.get("detail", "Unknown error")
-        if isinstance(detail, list):
-            detail = "; ".join(str(item) for item in detail)
-        raise RuntimeError(str(detail))
-    return data
+        raise RuntimeError(_read_error(response))
+    return response.json()
+
+
+def wait_for_job(job_id: str, status_line) -> dict:
+    started = time.time()
+    while True:
+        elapsed = int(time.time() - started)
+        if elapsed > JOB_TIMEOUT_SECONDS:
+            raise RuntimeError(f"The job did not finish within {JOB_TIMEOUT_SECONDS} seconds.")
+        job = get_job(job_id)
+        status = job.get("status", "unknown")
+        if status == "done" and job.get("result"):
+            return job["result"]
+        if status == "error":
+            raise RuntimeError(job.get("detail") or "The explanation job failed.")
+        status_line.caption(f"Status: {status} ({elapsed}s)")
+        time.sleep(POLL_INTERVAL_SECONDS)
 
 
 with st.sidebar:
@@ -49,8 +78,9 @@ with st.sidebar:
         models = []
         default_model = None
     else:
+        backend_name = health.get("llm_backend", "ollama")
         if health["status"] == "ok":
-            st.success("Backend and Ollama are ready")
+            st.success(f"Backend ready — LLM via {backend_name}")
         else:
             st.warning("Backend is running, but one dependency is missing")
         st.write("Git:", "available" if health["git_available"] else "missing")
@@ -58,6 +88,8 @@ with st.sidebar:
             "Ollama:",
             "available" if health["ollama_available"] else f"not reachable ({health['ollama_host']})",
         )
+        if backend_name == "openai":
+            st.write("LLM API:", f"{health.get('default_model')} (key configured)")
         models = health["available_models"]
         default_model = health["default_model"]
 
@@ -92,10 +124,12 @@ if run:
     else:
         started = time.time()
         with st.spinner(
-            "Cloning the repository, reading the source code and asking the local LLM. This can take a minute or two on CPU..."
+            "Cloning the repository, reading the source code and asking the LLM. This can take a minute or two on CPU..."
         ):
+            status_line = st.empty()
             try:
-                result = explain_repo(repo_url.strip(), selected_model)
+                job_id = submit_job(repo_url.strip(), selected_model)
+                result = wait_for_job(job_id, status_line)
             except RuntimeError as exc:
                 st.error(str(exc))
                 st.stop()

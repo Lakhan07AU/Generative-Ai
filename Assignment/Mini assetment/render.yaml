@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: repo-explainer
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: LLM_BACKEND
+        value: openai
+      - key: OPENAI_BASE_URL
+        value: https://api.groq.com/openai/v1
+      - key: OPENAI_MODEL
+        value: llama-3.1-8b-instant
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: BACKEND_URL
+        value: http://127.0.0.1:8001
+      - key: PYTHONUNBUFFERED
+        value: "1"

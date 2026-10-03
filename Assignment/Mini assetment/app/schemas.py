@@ -46,3 +46,17 @@ class HealthResponse(BaseModel):
     ollama_host: str
     default_model: str
     available_models: list[str]
+    llm_backend: str
+    openai_configured: bool
+
+
+class ExplainJobCreated(BaseModel):
+    job_id: str
+    status: str
+
+
+class ExplainJobStatus(BaseModel):
+    job_id: str
+    status: str
+    detail: str | None = None
+    result: ExplainResponse | None = None
