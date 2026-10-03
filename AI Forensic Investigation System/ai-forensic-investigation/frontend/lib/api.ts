@@ -102,6 +102,29 @@ export type LiveStatus = {
   vlm_last_error?: string | null;
   vlm_requests?: number | null;
   vlm_observations?: number | null;
+  source_health?: LiveSourceHealth | null;
+  evidence_enabled?: boolean | null;
+  evidence_last_error?: string | null;
+  evidence_captured?: number | null;
+  evidence_indexed?: number | null;
+  evidence_failed?: number | null;
+};
+
+/** Health payload of the media transport (CameraSource.health()). */
+export type LiveSourceHealth = {
+  source?: string;
+  device_index?: number;
+  stream_url?: string | null;
+  capture_backend?: string | null;
+  opened?: boolean;
+  alive?: boolean;
+  running?: boolean;
+  frames_read?: number;
+  dropped_frames?: number;
+  restarts?: number;
+  last_frame_at?: number;
+  now?: number;
+  error?: string | null;
 };
 
 export type LiveStatusEvent = {
@@ -148,6 +171,12 @@ export type LiveDetectionMetrics = {
   sampled_fps: number;
   processed_fps: number;
   detection_fps: number;
+  /** Real loaded model, reported by the backend (never inferred client-side). */
+  model?: string | null;
+  device?: string | null;
+  requested_device?: string | null;
+  imgsz?: number | null;
+  classes?: number | null;
   inference_latency_avg_ms: number;
   inference_latency_max_ms: number;
   queue_depth: number;
@@ -520,6 +549,14 @@ export type Policy = {
   status?: string | null;
   created_at?: string | null;
   chunk_count: number;
+};
+
+export type PolicyDeleteResult = {
+  policy_id: string;
+  document_name: string;
+  deleted_chunks: number;
+  deleted_vectors: number;
+  file_deleted: boolean;
 };
 
 export type PolicyChunk = {
@@ -1112,6 +1149,17 @@ export type ReportAuditEntry = {
   created_at?: string | null;
 };
 
+export type AuditLogEntry = {
+  id: number;
+  action: string;
+  user_id: number | null;
+  user_email?: string | null;
+  entity_type?: string | null;
+  entity_id?: number | null;
+  details?: string | null;
+  created_at?: string | null;
+};
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -1230,6 +1278,10 @@ export const api = {
   policySections: (policyId: string) => request<PolicyChunk[]>(`/policies/${policyId}/sections`),
   uploadPolicy: (form: FormData) =>
     request<Policy>("/policies/upload", { method: "POST", body: form }),
+  deletePolicy: (policyId: string) =>
+    request<PolicyDeleteResult>(`/policies/${encodeURIComponent(policyId)}`, {
+      method: "DELETE",
+    }),
   searchPolicies: (query: string) =>
     request<PolicySearchHit[]>("/policies/search", {
       method: "POST",
@@ -1331,6 +1383,16 @@ export const api = {
   reportFileUrl: (id: number, download = false) =>
     `${API_URL}/reports/${id}/file?download=${download}`,
 
+  // ---- Phase 9: Audit log ----
+
+  auditLogs: (params?: { action?: string; limit?: number }) => {
+    const qp = new URLSearchParams();
+    if (params?.action) qp.set("action", params.action);
+    if (params?.limit) qp.set("limit", String(params.limit));
+    const qs = qp.toString();
+    return request<AuditLogEntry[]>(`/audit/logs${qs ? `?${qs}` : ""}`);
+  },
+
   // ---- Phase 1: Live mobile camera ----
 
   liveStart: (
@@ -1341,6 +1403,8 @@ export const api = {
       buffer_window_seconds?: number;
       buffer_max_frames?: number;
       video_path?: string;
+      device_index?: number;
+      stream_url?: string;
     }
   ) =>
     request<CameraSession>(`/live/cameras/${cameraId}/start`, {
@@ -1476,3 +1540,4 @@ export const api = {
     request<ForensicReportMeta & { content: Record<string, unknown> }>(`/runs/${runId}/report`),
   forensicReportFile: (runId: number) => downloadBlob(`/runs/${runId}/report/file`),
 };
+

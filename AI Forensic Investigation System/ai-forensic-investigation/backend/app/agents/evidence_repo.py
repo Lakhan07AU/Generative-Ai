@@ -136,9 +136,9 @@ def get_frame_data(db: Session, video_id: int, frame_number: Optional[int] = Non
 # Subject / entity searches
 # ---------------------------------------------------------------------------
 
-def search_person(db: Session, camera_id: Optional[int] = None, limit: int = 5) -> list[dict]:
+def search_person(db: Session, camera_id: Optional[int] = None, video_id: Optional[int] = None, limit: int = 5) -> list[dict]:
     """Find clips whose detections include persons (humans), keyed by tracker."""
-    return _search_by_label(db, {"person", "people"}, camera_id, limit)
+    return _search_by_label(db, {"person", "people"}, camera_id, video_id, limit)
 
 
 def search_object(db: Session, label: str, camera_id: Optional[int] = None, limit: int = 5) -> list[dict]:
@@ -146,7 +146,7 @@ def search_object(db: Session, label: str, camera_id: Optional[int] = None, limi
     return _search_by_label(db, {label}, camera_id, limit)
 
 
-def _search_by_label(db: Session, labels: set[str], camera_id: Optional[int], limit: int) -> list[dict]:
+def _search_by_label(db: Session, labels: set[str], camera_id: Optional[int], video_id: Optional[int], limit: int) -> list[dict]:
     dets = (
         db.query(models.Detection)
         .filter(models.Detection.label.in_(sorted(labels)))
@@ -157,6 +157,8 @@ def _search_by_label(db: Session, labels: set[str], camera_id: Optional[int], li
     seen: dict[int, dict] = {}
     for d in dets:
         if camera_id and d.camera_id != camera_id:
+            continue
+        if video_id and d.video_id != video_id:
             continue
         cid = d.clip_id
         if cid in seen:

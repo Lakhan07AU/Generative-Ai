@@ -21,6 +21,7 @@ import {
   api,
   getToken,
   wsUrl,
+  API_URL,
   Camera,
   CameraSession,
   LiveStatus,
@@ -79,6 +80,67 @@ function indexVariant(status: string): "success" | "warning" | "danger" | "muted
   return "muted";
 }
 
+type LiveTransport = "webrtc" | "webcam" | "droidcam_usb" | "ipcam" | "simulation" | "file";
+
+/** Human-readable, unambiguous camera-source labels (never call simulation "real"). */
+const SOURCE_LABEL: Record<string, string> = {
+  webcam: "Laptop Webcam (real)",
+  droidcam_usb: "USB / DroidCam (real)",
+  ipcam: "Phone IP Camera (real network stream)",
+  webrtc: "Phone WebRTC (real)",
+  simulation: "Simulation (synthetic)",
+  file: "Demo Video (not evidence)",
+};
+
+function LiveCounters({ status }: { status: LiveStatus | null }) {
+  const health = (status?.source_health ?? null) as Record<string, unknown> | null;
+  const startedAt = status?.started_at ? Date.parse(status.started_at) : NaN;
+  const lastFrameAt = typeof health?.last_frame_at === "number" ? (health.last_frame_at as number) : NaN;
+  const seconds =
+    Number.isFinite(startedAt) && Number.isFinite(lastFrameAt) && lastFrameAt > startedAt / 1000
+      ? Math.max(lastFrameAt - startedAt / 1000, 0.001)
+      : 0;
+  const fps = seconds > 0 ? (status?.frames_received ?? 0) / seconds : 0;
+  const connected = Boolean(health?.opened) && Boolean(health?.alive);
+  const metrics = (status?.detection_metrics ?? {}) as Record<string, unknown>;
+
+  const cells: Array<[string, string, string?]> = [
+    ["Connection", connected ? "CONNECTED" : health ? "DISCONNECTED" : "—", connected ? "text-emerald-700" : "text-amber-700"],
+    ["Live", status?.active ? "LIVE" : status ? "STOPPED" : "—", status?.active ? "text-emerald-700" : "text-slate-500"],
+    ["Frames", String(health?.frames_read ?? status?.frames_received ?? 0)],
+    ["Dropped", String(health?.dropped_frames ?? 0)],
+    ["Restarts", String(health?.restarts ?? 0)],
+    ["FPS", fps > 0 ? fps.toFixed(1) : "—"],
+    ["Detection count", String(status?.detection_recent_count ?? 0)],
+    ["Track count", String(status?.active_tracks ?? 0)],
+    ["Event count", String(status?.total_events ?? 0)],
+    ["Evidence count", String(status?.evidence_captured ?? 0)],
+    ["Evidence indexed", String(status?.evidence_indexed ?? 0)],
+    ["VLM count", String(status?.vlm_observations ?? 0)],
+  ];
+  if (metrics.model || metrics.device) {
+    cells.push([
+      "YOLO",
+      `${metrics.model ?? "—"} · ${metrics.device ?? "?"} · imgsz ${metrics.imgsz ?? "?"}`,
+    ]);
+  }
+  if (typeof metrics.inference_latency_avg_ms === "number" && metrics.inference_latency_avg_ms > 0) {
+    cells.push(["Inference latency", `${metrics.inference_latency_avg_ms.toFixed(0)} ms avg`]);
+  }
+  if (health?.error) cells.push(["Source error", String(health.error), "text-red-700"]);
+
+  return (
+    <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+      {cells.map(([label, value, tone]) => (
+        <div key={label} className="rounded-md bg-slate-50 p-3">
+          <p className="text-xs text-slate-500">{label}</p>
+          <p className={`font-medium ${tone ?? "text-navy"}`}>{value}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 type OverlayFrame = {
   detections: LiveDetectionFrame["detections"];
   frameWidth: number | null;
@@ -117,27 +179,60 @@ function DetectionOverlay({
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const scaleX = rect.width / (frame.frameWidth || rect.width);
-    const scaleY = rect.height / (frame.frameHeight || rect.height);
-    const stroke = 2 * dpr;
-    ctx.lineWidth = stroke;
-    ctx.font = `${Math.max(11, Math.round(13 * dpr))}px system-ui, sans-serif`;
+    // The preview is rendered with object-contain, so a 4:3 camera inside a 16:9
+    // box is pillarboxed. Scale the absolute-pixel boxes onto the *image* area,
+    // otherwise they drift onto the black bars and look misaligned.
+    const frameW = frame.frameWidth || 0;
+    const frameH = frame.frameHeight || 0;
+    let offX = 0;
+    let offY = 0;
+    let scaleX = 1;
+    let scaleY = 1;
+    if (frameW > 0 && frameH > 0) {
+      const boxAspect = rect.width / rect.height;
+      const imgAspect = frameW / frameH;
+      let dispW: number;
+      let dispH: number;
+      if (imgAspect > boxAspect) {
+        dispW = rect.width;
+        dispH = rect.width / imgAspect;
+      } else {
+        dispH = rect.height;
+        dispW = rect.height * imgAspect;
+      }
+      offX = (rect.width - dispW) / 2;
+      offY = (rect.height - dispH) / 2;
+      scaleX = dispW / frameW;
+      scaleY = dispH / frameH;
+    } else {
+      // Dimensions unknown (should not happen - the engine always reports the
+      // frame shape): draw the absolute-pixel boxes 1:1 as a last resort
+      // instead of dropping them.
+      scaleX = 1;
+      scaleY = 1;
+    }
+    {
+      const stroke = 2 * dpr;
+      ctx.lineWidth = stroke;
+      ctx.font = `${Math.max(11, Math.round(13 * dpr))}px system-ui, sans-serif`;
 
-    for (const det of frame.detections) {
-      const [x1, y1, x2, y2] = det.bbox;
-      const px = x1 * scaleX * dpr;
-      const py = y1 * scaleY * dpr;
-      const pw = Math.max(0, (x2 - x1) * scaleX * dpr);
-      const ph = Math.max(0, (y2 - y1) * scaleY * dpr);
-      ctx.strokeStyle = "#22d3ee";
-      ctx.strokeRect(px, py, pw, ph);
-      const label = `${det.class_name} ${Math.round(det.confidence * 100)}%`;
-      ctx.fillStyle = "rgba(8, 145, 178, 0.9)";
-      const tw = ctx.measureText(label).width;
-      ctx.fillRect(px, py - 20 * dpr, tw + 10 * dpr, 20 * dpr);
-      ctx.fillStyle = "#ffffff";
-      ctx.textBaseline = "middle";
-      ctx.fillText(label, px + 5 * dpr, py - 10 * dpr);
+      for (const det of frame.detections) {
+        const [x1, y1, x2, y2] = det.bbox;
+        const px = (offX + x1 * scaleX) * dpr;
+        const py = (offY + y1 * scaleY) * dpr;
+        const pw = Math.max(0, (x2 - x1) * scaleX * dpr);
+        const ph = Math.max(0, (y2 - y1) * scaleY * dpr);
+        ctx.strokeStyle = "#22d3ee";
+        ctx.strokeRect(px, py, pw, ph);
+        const label = `${det.class_name} ${Math.round(det.confidence * 100)}%`;
+        ctx.fillStyle = "rgba(8, 145, 178, 0.9)";
+        const tw = ctx.measureText(label).width;
+        const labelY = Math.max(0, py - 20 * dpr);
+        ctx.fillRect(px, labelY, tw + 10 * dpr, 20 * dpr);
+        ctx.fillStyle = "#ffffff";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, px + 5 * dpr, labelY + 10 * dpr);
+      }
     }
   }, [frame, enabled]);
 
@@ -158,7 +253,10 @@ function DetectionOverlay({
 export default function LivePage() {
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState("");
-  const [transport, setTransport] = useState<"webrtc" | "simulation" | "file">("webrtc");
+  const [transport, setTransport] = useState<LiveTransport>("webrtc");
+  const [deviceIndex, setDeviceIndex] = useState(0);
+  const [streamUrl, setStreamUrl] = useState("");
+  const [fpsTarget, setFpsTarget] = useState(10);
   const [demoVideos, setDemoVideos] = useState<DemoVideoAsset[]>([]);
   const [selectedDemoPath, setSelectedDemoPath] = useState("");
   const [session, setSession] = useState<CameraSession | null>(null);
@@ -725,7 +823,15 @@ export default function LivePage() {
       const ses = await api.liveStart(cameraId, {
         transport,
         video_path: transport === "file" ? selectedDemoPath || undefined : undefined,
-        fps_target: 5,
+        device_index:
+          transport === "webcam" || transport === "droidcam_usb"
+            ? Number(deviceIndex) || 0
+            : undefined,
+        stream_url: transport === "ipcam" ? streamUrl.trim() || undefined : undefined,
+        fps_target:
+          transport === "webcam" || transport === "droidcam_usb" || transport === "ipcam"
+            ? fpsTarget
+            : 5,
         buffer_window_seconds: 15,
         buffer_max_frames: 150,
       });
@@ -780,6 +886,16 @@ export default function LivePage() {
   const selectedCamera = cameras.find((c) => c.id === Number(selectedCameraId));
   const liveNow = liveList.find((s) => s.camera_id === Number(selectedCameraId));
 
+  // Backend-owned captures (webcam / droidcam_usb / file / simulation) have no
+  // MediaStream in the browser, so the console subscribes to the MJPEG preview
+  // of the very frames that are being analysed. WebRTC keeps the native <video>.
+  const previewUrl =
+    streaming && transport !== "webrtc" && selectedCameraId
+      ? `${API_URL}/live/cameras/${selectedCameraId}/stream.mjpg?token=${encodeURIComponent(
+          getToken() ?? "",
+        )}`
+      : null;
+
   return (
     <ProtectedShell>
       <div className="mb-6">
@@ -817,19 +933,26 @@ export default function LivePage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Transport</label>
+                <label className="text-sm font-medium">Camera source</label>
                 <Select
                   value={transport}
-                  onChange={(e) => setTransport(e.target.value as "webrtc" | "simulation" | "file")}
+                  onChange={(e) => setTransport(e.target.value as LiveTransport)}
                 >
-                  <option value="webrtc">WebRTC (real camera)</option>
-                  <option value="simulation">Simulation (synthetic frames)</option>
-                  <option value="file">Demo file (real video pipeline)</option>
+                  <option value="webrtc">Phone WebRTC (real camera over network)</option>
+                  <option value="webcam">Laptop Webcam (real local camera)</option>
+                  <option value="droidcam_usb">USB / DroidCam camera (real local camera)</option>
+                  <option value="ipcam">Phone IP camera (real network stream)</option>
+                  <option value="simulation">Simulation (synthetic frames — NOT evidence)</option>
+                  <option value="file">Demo Video (licensed clip — NOT evidence)</option>
                 </Select>
                 <p className="text-xs text-slate-500">
-                  WebRTC streams the phone camera via SDP signaling. Simulation feeds synthetic frames for testing.
-                  {" "}Demo file replays a licensed demo clip through the real CV2 → detection → tracking → VLM →
-                  evidence pipeline.
+                  <strong>Phone WebRTC</strong> streams the phone camera via SDP signaling.{" "}
+                  <strong>Laptop Webcam</strong> and <strong>USB / DroidCam</strong> open a real local
+                  capture device over OpenCV (device 0 by default — it must exist; probe with{" "}
+                  <code>python backend/scripts/verify_webcam.py --probe</code>).{" "}
+                  <strong>Simulation</strong> feeds synthetic frames and <strong>Demo Video</strong>{" "}
+                  replays a licensed clip — neither is real forensic evidence; both run the real
+                  CV2 → detection → tracking → VLM → evidence pipeline.
                 </p>
               </div>
 
@@ -851,6 +974,81 @@ export default function LivePage() {
                     The selected clip is replayed as a camera feed on the backend. Make sure the camera below is an
                     offline/CCTV demo camera.
                   </p>
+                </div>
+              )}
+
+              {transport === "ipcam" && (
+                <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+                    <Video className="h-4 w-4" /> PHONE IP CAMERA - the backend pulls a real network stream from a
+                    phone. An unreachable stream fails the start request (HTTP 503); it never fakes frames.
+                  </p>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">Stream URL</label>
+                    <Input
+                      value={streamUrl}
+                      onChange={(e) => setStreamUrl(e.target.value)}
+                      placeholder="http://10.5.176.115:8080/video"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Android &quot;IP Webcam&quot;: <code>http://&lt;phone-ip&gt;:8080/video</code> (MJPEG) or{" "}
+                      <code>http://&lt;phone-ip&gt;:8080/h264</code>; RTSP also works, e.g.{" "}
+                      <code>rtsp://&lt;phone-ip&gt;:554/...</code>. The backend must be able to reach that
+                      address. Verify with <code>verify_ipcam.py</code>.
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium">FPS</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={fpsTarget}
+                      onChange={(e) => setFpsTarget(Number(e.target.value) || 5)}
+                    />
+                    <p className="text-xs text-slate-500">
+                      Analysis rate fed to YOLO. The phone may send more; frames are sampled down.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {(transport === "droidcam_usb" || transport === "webcam") && (
+                <div className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="flex items-center gap-2 text-xs font-semibold text-emerald-900">
+                    <Video className="h-4 w-4" /> REAL LOCAL CAMERA — the backend opens a physical capture
+                    device. A missing device fails the start request (HTTP 503); it never fakes frames.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Camera device</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={deviceIndex}
+                        onChange={(e) => setDeviceIndex(Number(e.target.value) || 0)}
+                      />
+                      <p className="text-xs text-slate-500">
+                        OpenCV capture index (integrated webcam is usually 0). Probe with{" "}
+                        <code>verify_webcam.py --probe</code> if the start fails.
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">FPS</label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={30}
+                        step={1}
+                        value={fpsTarget}
+                        onChange={(e) => setFpsTarget(Number(e.target.value) || 10)}
+                      />
+                      <p className="text-xs text-slate-500">
+                        Requested capture rate (frames/sec). Lower values reduce CPU load.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
               <div className="flex gap-2">
@@ -913,13 +1111,35 @@ export default function LivePage() {
             <CardContent className="space-y-4">
               <div className="relative aspect-video w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
                 {streaming ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="h-full w-full object-contain"
-                  />
+                  <>
+                    {transport === "webrtc" ? (
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      /* The backend owns the camera for webcam / droidcam_usb /
+                         file / simulation, so the browser has no MediaStream.
+                         Stream the exact frames that YOLO analysed, otherwise
+                         the surface stays black. */
+                      previewUrl ? (
+                        <img
+                          key={previewUrl}
+                          src={previewUrl}
+                          alt="Live camera preview"
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-400">
+                          <CameraIcon className="h-10 w-10" />
+                          <p className="text-sm">Waiting for the first analysed frame…</p>
+                        </div>
+                      )
+                    )}
+                  </>
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-2 text-slate-500">
                     <CameraIcon className="h-10 w-10" />
@@ -1005,8 +1225,8 @@ export default function LivePage() {
 
               <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                 <div className="rounded-md bg-slate-50 p-3">
-                  <p className="text-xs text-slate-500">Transport</p>
-                  <p className="font-medium text-navy">{status?.transport || "—"}</p>
+                  <p className="text-xs text-slate-500">Camera source</p>
+                  <p className="font-medium text-navy">{SOURCE_LABEL[status?.transport ?? ""] ?? status?.transport ?? "—"}</p>
                 </div>
                 <div className="rounded-md bg-slate-50 p-3">
                   <p className="text-xs text-slate-500">Frames received</p>
@@ -1021,6 +1241,8 @@ export default function LivePage() {
                   <p className="font-medium text-navy">{status?.frames_buffered ?? 0}</p>
                 </div>
               </div>
+
+              <LiveCounters status={status} />
 
               <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                 <div className="rounded-md bg-slate-50 p-3">

@@ -6,9 +6,15 @@ from datetime import datetime
 class LiveStartRequest(BaseModel):
     """Parameters for starting a live capture session."""
 
-    transport: str = "webrtc"  # "webrtc" | "simulation"
+    # "webrtc" | "simulation" | "file" | "droidcam_usb" | "webcam" | "ipcam"
+    transport: str = "webrtc"
     fps_target: Optional[float] = None
     video_path: Optional[str] = None
+    # OpenCV capture device index for the "webcam" / "droidcam_usb" transports.
+    device_index: Optional[int] = None
+    # Network stream URL for the "ipcam" transport (a phone as an IP camera),
+    # e.g. http://<phone-ip>:8080/video or rtsp://<phone-ip>:554/...
+    stream_url: Optional[str] = None
     buffer_window_seconds: Optional[float] = None
     buffer_max_frames: Optional[int] = None
 
@@ -48,8 +54,12 @@ class LiveStatusOut(BaseModel):
     fps_target: Optional[float] = None
     window_seconds: Optional[float] = None
     max_frames: Optional[int] = None
+    source_health: Optional[dict] = None
     frames_received: int = 0
     frames_sampled: int = 0
+    frames_rejected: int = 0
+    frames_decimated: int = 0
+    max_frame_bytes: int = 0
     frames_buffered: int = 0
     buffer_start: Optional[float] = None
     buffer_end: Optional[float] = None

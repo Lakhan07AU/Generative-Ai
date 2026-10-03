@@ -140,7 +140,7 @@ unstamped `investigation_runs` (4 experimental rows, missing defaults/index) was
 ## 16. Unit Tests — Classifier & Planner
 **PASS.** `test_classify_categories`, `test_classify_unanswerable_reasons_are_explicit` (asserts the
 literal `INTENT` token in `category_reason`), `test_planner_steps_are_bounded_and_whitelisted`,
-`test_sanitize_evidence_text_strips_untrusted_junk`, `test_detect_conflicts_unit` — all green.
+`test_sanitize_evidence_text_strips_untrusted_junk`, `test_detect_confli9cts_unit` — all green.
 
 ## 17. Unit + Integration Tests — Agent Runs
 **PASS.** `test_run_track_query_completes_with_verified_findings`, `test_run_presence_answered`,
@@ -221,3 +221,31 @@ failures are the pre-existing Phase 5 evaluation data gap). Suggested Phase 8 ca
 but evidence-grounded summaries gated behind the existing classifier/planner; report generation from a
 COMPLETED run (result + timeline + claims); run comparison across cases; async/sse execution for long
 cases; multi-camera case scope; and CI wiring (pytest + `npm run build`).
+---
+
+## PHYSICAL LIVE CAMERA VERIFICATION (added 2026-09-27)
+
+Verdict for this phase: **VERIFIED** against real services; the physical
+laptop-webcam capture step is **NOT TESTED** (no capture device is reachable from
+the verification container).
+
+| Item | Result |
+|---|---|
+| webcam transport (shares one `LocalOpenCVCameraSource` with `droidcam_usb`) | IMPLEMENTED + VERIFIED (14 unit/integration tests) |
+| Capture device on indices 0-3 | NOT TESTED — `/dev/video*` absent in the container |
+| Docker cannot see a host camera | CONFIRMED (`verify_webcam.py --probe` → `RESULT: NO DEVICE`) |
+| PostgreSQL 15.19 / MinIO / Qdrant (dims 384) | PASS — real services, no fallback |
+| YOLO | `yolov8n.pt` on **CPU** (`torch.cuda.is_available() == False`) |
+| Real VLM provider | NOT TESTED — no credentials configured |
+| Defect fixed here | `reportlab==4.2.5` added so reports render as a real PDF instead of degrading to markdown |
+
+To complete the physical step, run the backend host-native and follow
+`WEBCAM_SETUP.md`:
+
+``bash
+python backend/scripts/verify_webcam.py --probe
+python backend/scripts/verify_webcam.py --device 0 --seconds 10
+python backend/scripts/verify_live_webcam.py --base-url http://127.0.0.1:8000 --device 0 --seconds 45
+``
+
+Full evidence: `FINAL_SYSTEM_REPORT.md`.

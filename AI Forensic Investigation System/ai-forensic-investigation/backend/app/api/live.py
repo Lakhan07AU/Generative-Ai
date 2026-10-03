@@ -11,10 +11,12 @@ Transport design (per Phase 1 requirements):
 import asyncio
 import logging
 import os
+import time
 from functools import partial
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -25,6 +27,9 @@ from app.auth.security import decode_access_token
 from app.audit.service import record_audit
 from app.live.manager import SessionStatus, manager
 from app.live.synthetic import FrameSimulationFeeder
+from app.live.ipcam_camera import IpCameraSource
+from app.live.usb_camera import UsbCameraSource
+from app.live.webcam_camera import WebcamCameraSource
 from app.live.video_feeder import VideoFileFeeder
 
 logger = logging.getLogger(__name__)
@@ -104,6 +109,21 @@ def _on_file_finished(runtime):
         pass
 
 
+def _on_source_finished(runtime):
+    """USB/DroidCam source thread ended (device unplugged or gave up)."""
+    try:
+        source = getattr(runtime, "camera_source", None)
+        if source is not None:
+            source.stop()
+            runtime.camera_source = None
+        if runtime.status in SessionStatus.active_values():
+            runtime.mark_error("USB/DroidCam capture ended")
+        runtime.stop()
+        manager.stop(runtime.camera_id)
+    except Exception:
+        pass
+
+
 # ------------------------------------------------------------------- REST
 
 
@@ -122,7 +142,8 @@ def start_live_camera(
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     transport = payload.transport or "webrtc"
-    if transport not in ("webrtc", "simulation", "file"):
+    supported = ("webrtc", "simulation", "file", "droidcam_usb", "webcam", "ipcam")
+    if transport not in supported:
         raise HTTPException(status_code=422, detail=f"Unsupported transport: {transport}")
     runtime = _start_runtime(db, camera, current_user, payload)
     if transport == "simulation":
@@ -145,6 +166,33 @@ def start_live_camera(
         runtime.video_feeder = feeder
         feeder.start()
         runtime.mark_live()
+    if transport in ("droidcam_usb", "webcam", "ipcam"):
+        # Laptop webcam, DroidCam/USB and a phone IP camera share one OpenCV
+        # capture implementation (app/live/webcam_camera.py ->
+        # LocalOpenCVCameraSource) and one ingest path; only the capture target
+        # (device index or stream URL), the defaults prefix and the transport
+        # name differ.
+        if transport == "webcam":
+            source_cls, label = WebcamCameraSource, "Webcam"
+        elif transport == "droidcam_usb":
+            source_cls, label = UsbCameraSource, "USB/DroidCam"
+        else:
+            source_cls, label = IpCameraSource, "IP camera"
+        try:
+            source = source_cls(
+                runtime,
+                device_index=payload.device_index,
+                fps_target=payload.fps_target,
+                stream_url=payload.stream_url if transport == "ipcam" else None,
+            )
+            source.on_finished = lambda: _on_source_finished(runtime)
+            source.start()
+        except Exception as exc:  # noqa: BLE001 - device/OpenCV/network/config failure
+            runtime.mark_error(f"{label} capture failed: {exc}")
+            manager.stop(camera.id)
+            raise HTTPException(status_code=503, detail=f"{label} unavailable: {exc}")
+        runtime.camera_source = source
+        runtime.mark_live()
     return _camera_session_out(runtime)
 
 
@@ -166,6 +214,9 @@ def stop_live_camera(
     if getattr(runtime, "video_feeder", None) is not None:
         runtime.video_feeder.stop()
         runtime.video_feeder = None
+    if getattr(runtime, "camera_source", None) is not None:
+        runtime.camera_source.stop()
+        runtime.camera_source = None
     runtime.stop()  # STOPPING -> COMPLETED (persisted)
     manager.stop(camera_id)  # release the single-session lock
     record_audit(
@@ -206,6 +257,80 @@ def live_sessions(
     current_user: User = Depends(get_current_user),
 ):
     return [LiveStatusOut(**r.snapshot()) for r in manager.active_sessions()]
+
+
+# --------------------------------------------------------- MJPEG preview
+
+
+async def mjpeg_frame_stream(runtime, sub, boundary: str):
+    """Yield ``multipart/x-mixed-replace`` parts for a preview subscriber.
+
+    Frames are forwarded as fast as the capture produces them; a browser that
+    cannot keep up drops frames in :meth:`_Subscriber`'s queue instead of
+    back-pressuring the capture thread.
+    """
+    try:
+        while True:
+            try:
+                jpeg = await asyncio.wait_for(sub.queue.get(), timeout=1.0)
+            except asyncio.TimeoutError:
+                if runtime.status not in SessionStatus.active_values():
+                    return
+                continue  # no frame within 1s: stay connected, keep waiting
+            if not jpeg:
+                continue
+            yield (
+                f"--{boundary}\r\n"
+                f"Content-Type: image/jpeg\r\n"
+                f"Content-Length: {len(jpeg)}\r\n\r\n"
+            ).encode("ascii") + jpeg + b"\r\n"
+    except asyncio.CancelledError:  # browser navigated away / tab closed
+        raise
+    finally:
+        runtime.unsubscribe_preview(sub)
+
+
+@router.get("/live/cameras/{camera_id}/stream.mjpg")
+async def live_camera_stream_mjpeg(
+    camera_id: int,
+    token: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Live JPEG preview of the frames the backend is actually analysing.
+
+    ``webcam``, ``droidcam_usb``, ``file`` and ``simulation`` sessions have no
+    video track in the browser, so the console would otherwise show an empty
+    (black) surface. This endpoint re-publishes the very same frames that are
+    pushed into detection, which is what the bounding boxes are drawn on.
+
+    The token is accepted as a query parameter because an ``<img>`` element
+    cannot send an ``Authorization`` header. Authentication and role checks are
+    identical to the other live endpoints.
+    """
+    user = _user_from_token(db, token)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    if user.role not in LIVE_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+    runtime = manager.get(camera_id)
+    if runtime is None or runtime.status not in SessionStatus.active_values():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No active live session")
+    if runtime.transport == "webrtc":
+        # WebRTC already delivers the remote track; re-encoding would be waste.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="WebRTC sessions use the native video track, not the MJPEG preview",
+        )
+
+    sub = runtime.subscribe_preview()
+    boundary = f"frame{int(time.time() * 1000)}"
+
+    return StreamingResponse(
+        mjpeg_frame_stream(runtime, sub, boundary),
+        media_type=f"multipart/x-mixed-replace; boundary={boundary}",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate", "Pragma": "no-cache"},
+    )
 
 
 # --------------------------------------------------------- WebSocket auth
@@ -314,6 +439,14 @@ async def ws_live_signaling(websocket: WebSocket, camera_id: int, db: Session = 
             return
 
         runtime = manager.get(camera_id)
+        if runtime is not None and runtime.status not in SessionStatus.active_values():
+            # A stale terminal-state runtime (e.g. a WebRTC session that failed
+            # or a feeder/source that ended) must be evicted so a reconnecting
+            # phone gets a fresh session instead of an endless "Session not
+            # active" rejection. REST /start already overwrites via
+            # manager.start(); the signaling path must do the same.
+            manager.stop(camera_id)
+            runtime = None
         if runtime is None:
             from app.live.manager import ActiveSessionError
 

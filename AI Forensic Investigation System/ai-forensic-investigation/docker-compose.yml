@@ -55,6 +55,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: forensic-backend:latest
     container_name: forensic-backend
     restart: unless-stopped
     env_file:
@@ -63,10 +64,15 @@ services:
       DATABASE_URL: postgresql+psycopg2://forensics:forensics_password@postgres:5432/forensics
       MINIO_ENDPOINT: minio:9000
       QDRANT_URL: http://qdrant:6333
+      USE_LOCAL_STORAGE: "false"
+      # Simulation-only embedding provider yields low cosine similarity; lower the
+      # verification gate so RAG can ground answers. Revert for real providers.
+      RAG_VERIFICATION_THRESHOLD: "0.25"
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      # Demo dataset & models stay outside the image (large files, re-mounted on
+      # every smoke test). Remove for a fully baked image if you prefer.
       - ./data:/app/data
       - ./models:/app/models
     depends_on:
@@ -78,12 +84,13 @@ services:
         condition: service_healthy
     command: >
       sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: forensic-frontend:latest
     container_name: forensic-frontend
     restart: unless-stopped
     env_file:
@@ -92,13 +99,8 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     depends_on:
       - backend
-    command: sh -c "npm install && npm run dev"
 
 volumes:
   postgres_data:

@@ -92,6 +92,15 @@ class DetectionPipeline:
     def snapshot(self) -> dict:
         return self.metrics.snapshot()
 
+    def model_info(self) -> dict:
+        """Describe the real loaded YOLO model (used by live status/health)."""
+        from app.detection.engine import get_engine
+
+        try:
+            return get_engine().model_info()
+        except Exception as exc:  # noqa: BLE001 - model may be unavailable
+            return {"model": None, "device": None, "error": str(exc)[:200]}
+
     # --------------------------------------------------------------- intern
 
     def _handle_result(self, frame: DetectionFrame) -> None:

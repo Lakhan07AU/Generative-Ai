@@ -137,6 +137,44 @@ def test_metrics_rates_with_injected_clock():
     assert m.snapshot()["input_fps"] == pytest.approx(2.0, abs=0.2)
 
 
+def test_metrics_rates_stay_plausible_when_events_interleave_in_bursts():
+    """Regression: rates exploded into the hundreds of thousands.
+
+    The producer and inference threads interleave record_input/record_sampled/
+    record_processed, and record_detections fires once per frame. A shared
+    "last timestamp" plus an EMA of instantaneous 1/dt turned those
+    microsecond gaps into ~375,000 detections/sec on a ~16 fps stream.
+    """
+    clk = FakeClock()
+    m = DetectionMetrics(window_seconds=5.0, clock=clk)
+    # ~16 processed frames/sec, each contributing 3 detections.
+    for _ in range(80):
+        m.record_input()
+        m.record_sampled()
+        m.record_processed(70.0)
+        m.record_detections(3)
+        clk.advance(1.0 / 16.0)
+    snap = m.snapshot()
+    for key, ceiling in (
+        ("input_fps", 25.0),
+        ("sampled_fps", 25.0),
+        ("processed_fps", 25.0),
+        ("detection_fps", 100.0),
+    ):
+        assert 0.0 < snap[key] <= ceiling, f"{key}={snap[key]} is not a real rate"
+    assert snap["detection_fps"] == pytest.approx(48.0, abs=6.0)
+    assert snap["total_detections"] == 240
+
+
+def test_metrics_detection_rate_ignores_frames_with_no_detections():
+    clk = FakeClock()
+    m = DetectionMetrics(window_seconds=5.0, clock=clk)
+    m.record_detections(0)
+    m.record_processed(70.0)
+    clk.advance(0.1)
+    assert m.snapshot()["detection_fps"] == 0.0
+
+
 def test_metrics_thread_safety():
     m = DetectionMetrics()
     errors = []

@@ -74,16 +74,19 @@ def demo_disclaimer():
 def demo_dataset():
     """Return the demo manifest with absolute local file paths + DB status."""
     manifest = _load_json("metadata/manifest.json")
-    for v in manifest.get("videos", []):
-        v["abs_path"] = os.path.join(DEMO_ROOT, v.get("path", ""))
-        v["thumbnail_path"] = os.path.join(DEMO_ROOT, f"thumbnails/{v.get('demo_id')}.jpg")
-        v.update(_video_status(v.get("filename", "")))
-    for k in manifest.get("keyframes", []):
-        k["abs_path"] = os.path.join(DEMO_ROOT, k.get("path", ""))
-    for f in manifest.get("fixtures", []):
-        f["abs_path"] = os.path.join(DEMO_ROOT, f.get("path", ""))
-    for t in manifest.get("thumbnails", []):
-        t["abs_path"] = os.path.join(DEMO_ROOT, t.get("path", ""))
+    # A manifest entry may be null (e.g. an absent thumbnail was recorded as
+    # null): skip them instead of raising AttributeError and 500-ing the API.
+    for key in ("videos", "keyframes", "fixtures", "thumbnails"):
+        for entry in (manifest.get(key) or []):
+            if not isinstance(entry, dict):
+                continue
+            if key == "videos":
+                entry["abs_path"] = os.path.join(DEMO_ROOT, entry.get("path", ""))
+                entry["thumbnail_path"] = os.path.join(
+                    DEMO_ROOT, f"thumbnails/{entry.get('demo_id')}.jpg")
+                entry.update(_video_status(entry.get("filename", "")))
+            else:
+                entry["abs_path"] = os.path.join(DEMO_ROOT, entry.get("path", ""))
     return manifest
 
 

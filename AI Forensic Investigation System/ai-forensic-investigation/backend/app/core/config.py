@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 120
 
+    # ---- Phase 9: credential rate limiting --------------------------------
+    # Sliding-window login throttling keyed by IP + email (in-process). Disable
+    # only when a reverse proxy already enforces equivalent limits.
+    LOGIN_RATE_LIMIT_ENABLED: bool = True
+    LOGIN_RATE_LIMIT_MAX_ATTEMPTS: int = 5
+    LOGIN_RATE_LIMIT_WINDOW_SECONDS: float = 60.0
+
     MINIO_ENDPOINT: str = "localhost:9000"
     MINIO_ACCESS_KEY: str = "minioadmin"
     MINIO_SECRET_KEY: str = "minioadmin"
@@ -145,13 +152,95 @@ class Settings(BaseSettings):
     # Hard cap on accepted source frames/sec before time-based sampling.
     LIVE_SOURCE_FPS_CAP: float = 30.0
     # Larger raw frames (bytes) are rejected by ingestion to bound memory.
-    LIVE_MAX_FRAME_BYTES: int = 4 * 1024 * 1024
+    # Must fit the largest realistic camera frame or every frame is silently
+    # dropped: 4K 8-bit BGR is 3840*2160*3 = 24.9 MB, 1080p is 6.2 MB. The
+    # previous 4 MB default rejected 1080p sources outright, which left a
+    # session reporting "LIVE" with zero sampled frames and no detections.
+    LIVE_MAX_FRAME_BYTES: int = 32 * 1024 * 1024
     # ICE servers (STUN/TURN) used by the receive-only WebRTC peer. JSON list of
     # RTCIceServer objects with "urls" (and optional "username"/"credential"),
     # e.g. [{"urls": ["stun:stun.l.google.com:19302"]}]. Empty by default:
     # host-candidate-only is enough for the same-LAN physical demo. Set this when
     # the phone and backend are separated by NAT.
     WEBRTC_ICE_SERVERS: str = "[]"
+
+    # ---- Phase 9: USB / DroidCam capture source ---------------------------
+    # Transport "droidcam_usb" decodes frames from a local USB camera or a
+    # DroidCam virtual camera (DroidCam Desktop 4 assigns the installed driver,
+    # typically OpenCV device index 0) and feeds them into a live session the
+    # same way the demo file transport does. Requires OpenCV (cv2).
+    DROIDCAM_DEVICE_INDEX: int = 0
+    # Optional frame-rate override for the USB source; when empty the camera's
+    # native CAP_PROP_FPS is used (with LIVE_SESSION_FPS as a sane lower bound).
+    DROIDCAM_FPS: float = 0.0
+    # Seconds without a frame before the source reports itself as unhealthy.
+    DROIDCAM_STALE_SECONDS: float = 5.0
+    # Soft restart attempts when the capture thread dies unexpectedly (0 = none).
+    DROIDCAM_MAX_RESTARTS: int = 3
+    # Wait (linearly increasing per attempt) before each reconnect so a brief
+    # device hiccup does not exhaust the restart budget in under a second.
+    DROIDCAM_RECONNECT_BACKOFF_SECONDS: float = 3.0
+    # After streaming again for this long, restore the restart budget so only
+    # *consecutive* failures end a long session.
+    DROIDCAM_RECONNECT_RESET_SECONDS: float = 60.0
+    # Sampling/ingest tuning for the transport the same as any live session.
+
+    # ---- Laptop webcam capture source (transport "webcam") ---------------
+    # Same OpenCV capture implementation as "droidcam_usb"
+    # (see app/live/webcam_camera.py); only the defaults and the reported
+    # source name differ. Device index 0 is the default on Windows/macOS/Linux
+    # but is NOT assumed to exist - use backend/scripts/verify_webcam.py --probe
+    # to discover the indices actually present on the host.
+    WEBCAM_DEVICE_INDEX: int = 0
+    # Requested capture rate (frames/sec) and capture resolution.
+    WEBCAM_FPS: float = 10.0
+    WEBCAM_WIDTH: int = 640
+    WEBCAM_HEIGHT: int = 480
+    # Seconds without a frame before the source reports itself as unhealthy.
+    WEBCAM_STALE_SECONDS: float = 5.0
+    # Bounded soft-restart attempts when the device stops delivering frames
+    # (0 = none). Never an unbounded/infinite reconnect loop.
+    WEBCAM_MAX_RESTARTS: int = 3
+    # Consecutive failed reads before a reconnect is attempted.
+    WEBCAM_MAX_CONSECUTIVE_FAILURES: int = 10
+    # Wait (linearly increasing per attempt) before each reconnect so a brief
+    # device hiccup does not exhaust the restart budget in under a second.
+    WEBCAM_RECONNECT_BACKOFF_SECONDS: float = 3.0
+    # After streaming again for this long, restore the restart budget so only
+    # *consecutive* failures end a long session.
+    WEBCAM_RECONNECT_RESET_SECONDS: float = 60.0
+    # JPEG quality for the browser preview stream (MJPEG) of backend-captured
+    # frames. Encoding only happens while a browser is actually watching, so a
+    # WebRTC session never pays for it.
+    WEBCAM_PREVIEW_JPEG_QUALITY: int = 70
+    # Capture backends probed in order until one actually delivers a frame.
+    # Windows UVC cameras commonly "open" under CAP_ANY/CAP_MSMF but never yield
+    # pixels, while CAP_DSHOW works, so the default there is dshow,msmf,any.
+    # Linux uses any,v4l2; macOS uses avfoundation,any. Leave empty for the
+    # platform default.
+    WEBCAM_CAPTURE_BACKENDS: str = ""
+
+    # --------------------------------------------------------------- ipcam
+    # Phone / IP camera served over the network, e.g. the "IP Webcam" app at
+    # http://<phone-ip>:8080/video (MJPEG) or rtsp://<phone-ip>:554/... (H.264).
+    # Defaults mirror the webcam transport; leave the URL empty to require it
+    # per session.
+    IPCAM_STREAM_URL: str = ""
+    IPCAM_FPS: float = 10.0
+    IPCAM_WIDTH: int = 1280
+    IPCAM_HEIGHT: int = 720
+    IPCAM_STALE_SECONDS: float = 5.0
+    IPCAM_MAX_RESTARTS: int = 3
+    IPCAM_MAX_CONSECUTIVE_FAILURES: int = 10
+    IPCAM_CAPTURE_BACKENDS: str = ""
+    # A phone app serving /video stops when the screen locks, the app is
+    # backgrounded, or Wi-Fi blips. Wait (linearly increasing per attempt)
+    # before reconnecting so a brief outage does not exhaust all 3 restarts in
+    # under a second and end the session.
+    IPCAM_RECONNECT_BACKOFF_SECONDS: float = 3.0
+    # After streaming again for this long, the outage is forgiven and the
+    # restart budget is restored, so only *consecutive* failures end a session.
+    IPCAM_RECONNECT_RESET_SECONDS: float = 60.0
 
     # ---- Phase 2: Real-time YOLO detection -------------------------------
 

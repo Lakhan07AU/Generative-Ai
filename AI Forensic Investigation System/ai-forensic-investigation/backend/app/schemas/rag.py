@@ -59,6 +59,16 @@ class PolicyOut(BaseModel):
     chunk_count: int = 0
 
 
+class PolicyDeleteOut(BaseModel):
+    """Result of deleting a policy document."""
+
+    policy_id: str
+    document_name: str
+    deleted_chunks: int = 0
+    deleted_vectors: int = 0
+    file_deleted: bool = False
+
+
 class PolicyChunkOut(BaseModel):
     id: int
     section: Optional[str] = None

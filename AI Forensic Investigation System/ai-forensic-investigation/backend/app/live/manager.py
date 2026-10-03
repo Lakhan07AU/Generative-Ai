@@ -122,6 +122,7 @@ class LiveSessionRuntime:
         self.webrtc = None
         self.simulation = None
         self.video_feeder = None
+        self.camera_source = None
         self._last_persist_at = 0.0
         self._lock = threading.RLock()
         self._subscribers: List[_Subscriber] = []
@@ -132,6 +133,7 @@ class LiveSessionRuntime:
         self.tracking = None
         self._tracking_subscribers: List[_Subscriber] = []
         self._tracking_frame_seq = 0
+        self._preview_subscribers: List[_Subscriber] = []
         self.vlm_session = None
         self.vlm_error: Optional[str] = None
         self._vlm_subscribers: List[_Subscriber] = []
@@ -577,6 +579,9 @@ class LiveSessionRuntime:
             accepted = self.source.push_with_ts(frame, ts)
             if accepted:
                 self._bump_frame_counters()
+                jpeg = self._encode_preview(frame)
+                if jpeg is not None:
+                    self.publish_preview(jpeg)
             return accepted
 
     def _bump_frame_counters(self) -> None:
@@ -668,9 +673,26 @@ class LiveSessionRuntime:
         detection_metrics = (
             self.detection.snapshot() if self.detection is not None else None
         )
-        detection_recent = (
-            len(self.detection.recent_results()) if self.detection is not None else 0
+        if detection_metrics is not None:
+            # Report the REAL loaded model/device (no GPU claim without evidence).
+            try:
+                if hasattr(self.detection, "model_info"):
+                    detection_metrics = {**detection_metrics, **self.detection.model_info()}
+            except Exception:  # noqa: BLE001 - metrics must never break status
+                pass
+        # ``recent_results()`` returns recent *frames*, including frames that
+        # contained no detections at all. Reporting len(frames) here saturated
+        # at the deque bound and claimed e.g. "200 detections" on a session
+        # where the model had actually found nothing, so count the detections
+        # the frames actually carry.
+        recent_items = self.detection.recent_results() if self.detection is not None else []
+        detection_recent = sum(
+            len(item.get("detections") or []) for item in recent_items
         )
+        camera_source = getattr(self, "camera_source", None)
+        source_health = self.source.health() if self.source is not None else None
+        if camera_source is not None:
+            source_health = camera_source.health()
         return {
             "camera_id": self.camera_id,
             "camera_name": self.camera_name,
@@ -678,11 +700,17 @@ class LiveSessionRuntime:
             "active": status in SessionStatus.active_values(),
             "status": status,
             "transport": self.transport,
+            "source_health": source_health,
             "fps_target": self.fps_target,
             "window_seconds": self.window_seconds,
             "max_frames": self.max_frames,
             "frames_received": self.ingestion.received,
             "frames_sampled": self.ingestion.sampled,
+            "frames_rejected": self.ingestion.rejected,
+            "frames_decimated": self.ingestion.decimated,
+            "max_frame_bytes": getattr(
+                self.ingestion, "_max_frame_bytes", self.max_frame_bytes
+            ),
             "frames_buffered": self.buffer.count(),
             "buffer_start": self.buffer.oldest_timestamp,
             "buffer_end": self.buffer.newest_timestamp,
@@ -739,6 +767,61 @@ class LiveSessionRuntime:
         with self._lock:
             if sub in self._detection_subscribers:
                 self._detection_subscribers.remove(sub)
+
+    def subscribe_preview(self) -> "_Subscriber":
+        sub = _Subscriber()
+        try:
+            sub.loop = asyncio.get_running_loop()
+        except RuntimeError:  # no running loop -> publishing is a no-op
+            sub.loop = None
+        with self._lock:
+            self._preview_subscribers.append(sub)
+        return sub
+
+    def unsubscribe_preview(self, sub: "_Subscriber") -> None:
+        with self._lock:
+            if sub in self._preview_subscribers:
+                self._preview_subscribers.remove(sub)
+
+    def publish_preview(self, jpeg: bytes) -> None:
+        """Thread-safe fan-out of an encoded frame to MJPEG consumers."""
+        with self._lock:
+            subs = list(self._preview_subscribers)
+        for sub in subs:
+            loop = sub.loop
+            if loop is None or loop.is_closed():
+                continue
+            try:
+                loop.call_soon_threadsafe(_publish_item, jpeg, sub.queue)
+            except RuntimeError:  # loop closed mid-flight
+                continue
+            except Exception:  # noqa: BLE001
+                pass
+
+    def _encode_preview(self, frame) -> Optional[bytes]:
+        """JPEG-encode a frame for the browser preview.
+
+        Only runs when a preview subscriber exists, so a WebRTC session (which
+        already delivers video natively) never pays for the encode.
+        """
+        with self._lock:
+            wanted = bool(self._preview_subscribers)
+        if not wanted or frame is None:
+            return None
+        try:
+            import cv2
+
+            ok, buf = cv2.imencode(
+                ".jpg",
+                frame,
+                [int(cv2.IMWRITE_JPEG_QUALITY), int(settings.WEBCAM_PREVIEW_JPEG_QUALITY)],
+            )
+            if not ok:
+                return None
+            return buf.tobytes()
+        except Exception as exc:  # noqa: BLE001 - preview must never break ingest
+            logger.debug("Preview encode failed (camera=%s): %s", self.camera_id, exc)
+            return None
 
 
 class ActiveSessionError(RuntimeError):
@@ -818,6 +901,13 @@ class LiveCameraManager:
             if video_feeder is not None:
                 video_feeder.stop()
                 runtime.video_feeder = None
+            camera_source = getattr(runtime, "camera_source", None)
+            if camera_source is not None:
+                try:
+                    camera_source.stop()
+                except Exception:  # noqa: BLE001
+                    pass
+                runtime.camera_source = None
 
 
 manager = LiveCameraManager()

@@ -171,11 +171,23 @@ def test_agent_does_not_call_tools_beyond_budget(db):
 # ---------------------------------------------------------------------------
 
 def test_budget_timeout_expires():
-    import time as _t
+    # Drive the clock explicitly instead of sleeping. The old version slept
+    # against a 1 ms timeout, which is fragile on a loaded machine and simply
+    # wrong whenever another test freezes time.monotonic() (Budget.now() reads
+    # the module-level clock, so a frozen clock made a real sleep a no-op).
+    clock = {"t": 1000.0}
 
-    b = Budget(timeout_seconds=0.001, max_steps=10, max_tool_calls=10, retry_limit=1)
+    class _ClockedBudget(Budget):
+        def now(self) -> float:
+            return clock["t"]
+
+    b = _ClockedBudget(
+        timeout_seconds=1.0, max_steps=10, max_tool_calls=10, retry_limit=1
+    )
     deadline = b.deadline()
-    _t.sleep(0.01)
+    assert deadline == 1001.0
+    assert not b.is_expired(deadline), "must not be expired before the timeout elapses"
+    clock["t"] = deadline + 0.5
     assert b.is_expired(deadline)
 
 

@@ -305,3 +305,32 @@ PHASE 8 VERDICT: READY FOR PHASE 9
 ```
 
 All deliverables complete: forensic pipeline, timeline, verification, human review, 15-section reports (PDF), frontend UI, 19 unit tests + 46 E2E checks, zero new regressions, sub-millisecond pipeline latency. No blockers.
+
+---
+
+## PHYSICAL LIVE CAMERA VERIFICATION (added 2026-09-27)
+
+Verdict for this phase: **VERIFIED** against real services; the physical
+laptop-webcam capture step is **NOT TESTED** (no capture device is reachable from
+the verification container).
+
+| Item | Result |
+|---|---|
+| webcam transport (shares one `LocalOpenCVCameraSource` with `droidcam_usb`) | IMPLEMENTED + VERIFIED (14 unit/integration tests) |
+| Capture device on indices 0-3 | NOT TESTED — `/dev/video*` absent in the container |
+| Docker cannot see a host camera | CONFIRMED (`verify_webcam.py --probe` → `RESULT: NO DEVICE`) |
+| PostgreSQL 15.19 / MinIO / Qdrant (dims 384) | PASS — real services, no fallback |
+| YOLO | `yolov8n.pt` on **CPU** (`torch.cuda.is_available() == False`) |
+| Real VLM provider | NOT TESTED — no credentials configured |
+| Defect fixed here | `reportlab==4.2.5` added so reports render as a real PDF instead of degrading to markdown |
+
+To complete the physical step, run the backend host-native and follow
+`WEBCAM_SETUP.md`:
+
+``bash
+python backend/scripts/verify_webcam.py --probe
+python backend/scripts/verify_webcam.py --device 0 --seconds 10
+python backend/scripts/verify_live_webcam.py --base-url http://127.0.0.1:8000 --device 0 --seconds 45
+``
+
+Full evidence: `FINAL_SYSTEM_REPORT.md`.

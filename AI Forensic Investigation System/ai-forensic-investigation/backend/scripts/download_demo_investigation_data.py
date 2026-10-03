@@ -505,7 +505,10 @@ def main() -> None:
         "scenario_catalog": SCENARIO_CATALOG,
         "videos": videos_out,
         "keyframes": keyframes_out,
-        "thumbnails": [_thumbnail_entry(root, v["demo_id"]) for v in videos_out],
+        # Drop missing thumbnails instead of writing nulls: a null entry makes
+        # every manifest consumer (API + verifiers) fail on `.get()`.
+        "thumbnails": [t for t in (_thumbnail_entry(root, v["demo_id"]) for v in videos_out)
+                       if t is not None],
         "fixtures": fixtures_out,
     }
     with open(manifest_path, "w", encoding="utf-8") as fh:

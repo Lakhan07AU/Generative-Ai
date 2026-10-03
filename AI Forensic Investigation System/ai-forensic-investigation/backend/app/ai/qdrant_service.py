@@ -30,7 +30,7 @@ def _canonical_point_id(point_id: Any) -> str:
     them; the in-memory fallback keeps the original string."""
     raw = str(point_id)
     if raw.lstrip("-").isdigit():
-        return raw
+        return int(raw)
     try:
         uuid.UUID(raw)
         return raw
@@ -126,6 +126,41 @@ class QdrantService:
             self._connect()
         return self._backend or "memory"
 
+    def backend_name(self) -> str:
+        """Public name of the active vector backend: "qdrant" or "memory"."""
+        return self._backend_name()
+
+    def health(self) -> dict:
+        name = self._backend_name()
+        if name != "qdrant":
+            return {
+                "backend": name,
+                "ok": True,
+                "detail": "in-memory fallback (Qdrant not reachable); "
+                "indexed data is ephemeral",
+            }
+        try:
+            self._client.get_collections()
+            return {"backend": name, "ok": True, "url": settings.QDRANT_URL}
+        except Exception as exc:  # noqa: BLE001
+            return {"backend": name, "ok": False, "url": settings.QDRANT_URL, "error": str(exc)[:300]}
+
+    def clear(self, collection: str) -> None:
+        """Drop and recreate a collection so no stale points survive (idempotent)."""
+        self._connect()
+        if self._backend == "qdrant":
+            from qdrant_client.http import models as qm
+
+            self._client.recreate_collection(
+                collection_name=collection,
+                vectors_config=qm.VectorParams(
+                    size=settings.QDRANT_VECTOR_SIZE,
+                    distance=qm.Distance.COSINE,
+                ),
+            )
+        else:
+            self._mem[collection] = _InMemoryStore()
+
     def ensure_collections(self) -> None:
         self._connect()
         if self._backend == "qdrant":
@@ -215,13 +250,33 @@ class QdrantService:
                 points_selector=qm.PointIdsList(points=[_canonical_point_id(point_id)]),
             )
         else:
-            self._store(collection).delete(point_id)
+            # Ids are stored as strings by the in-memory fallback (see index),
+            # so normalise here too - otherwise "4" != 4 and the delete is a
+            # silent no-op.
+            self._store(collection).delete(str(point_id))
 
     def count(self, collection: str) -> int:
         self.ensure_collections()
         if self._backend == "qdrant":
             return self._client.count(collection_name=collection).count
         return self._store(collection).count()
+
+    def point_exists(self, collection: str, point_id: Any) -> bool:
+        """Whether a point with the given id exists in the active backend."""
+        self.ensure_collections()
+        cid = _canonical_point_id(point_id)
+        if self._backend == "qdrant":
+            try:
+                hits = self._client.retrieve(
+                    collection_name=collection,
+                    ids=[cid],
+                    with_vectors=False,
+                    with_payload=False,
+                )
+                return len(hits) > 0
+            except Exception:  # noqa: BLE001
+                return False
+        return any(p["id"] == str(point_id) for p in self._store(collection).points)
 
 
 qdrant = QdrantService()

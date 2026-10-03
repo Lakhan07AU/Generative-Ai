@@ -51,7 +51,12 @@ def _search_video(db: Session, args: dict) -> dict:
 
 
 def _search_person(db: Session, args: dict) -> dict:
-    return {"results": repo.search_person(db, camera_id=args.get("camera_id"), limit=args.get("limit", 5))}
+    return {"results": repo.search_person(
+        db,
+        camera_id=args.get("camera_id"),
+        video_id=args.get("video_id"),
+        limit=args.get("limit", 5),
+    )}
 
 
 def _search_object(db: Session, args: dict) -> dict:
@@ -136,6 +141,7 @@ _register(Tool(
     "Never attempts identity attribution.",
     {
         "camera_id": {"type": "integer", "required": False},
+        "video_id": {"type": "integer", "required": False},
         "limit": {"type": "integer", "required": False},
     },
     _search_person,

@@ -56,11 +56,3 @@ The repository is intended to document practical learning in areas such as:
 - Model evaluation and visualization
 - Applied AI projects
 
-## Project Structure
-
-```text
-Generative-Ai/
-├── Assignment/
-│   └── MNIST(Assignment1).ipynb
-├── AI Forensic Investigation System/
-└── README.md

@@ -314,8 +314,9 @@ def _synthesize_claim(query: str, results: dict, evidence: list[dict]) -> Option
     """
     if not evidence:
         return None
-    # Favour search_video / search_person / search_object outputs.
-    for src in ("search_video", "search_person", "search_object", "search_event"):
+    # Favour person/object searches: their clip results carry a concrete subject
+    # label and tracking id, which the verifier needs for a grounded claim.
+    for src in ("search_person", "search_object", "search_video", "search_event"):
         bucket = results.get(src) or []
         for res in bucket:
             items = res if isinstance(res, list) else (
@@ -326,9 +327,14 @@ def _synthesize_claim(query: str, results: dict, evidence: list[dict]) -> Option
                 if not top:
                     continue
                 ts = top.get("timestamp") or top.get("start_time")
-                subject = top.get("label") or (top.get("objects") or ["subject"])[0] if top.get("objects") else "subject"
+                subject = _pick_subject_label(top)
                 location = top.get("camera_name") or top.get("location_context") or "the monitored area"
-                claim_text = f"Subject detected in {location}"
+                tracking_id = top.get("subject_tracking_id") or top.get("tracking_id")
+                claim_text = (
+                    f"{subject} (tracking {tracking_id}) detected in {location}"
+                    if tracking_id
+                    else f"{subject} detected in {location}"
+                )
                 return {
                     "claim_text": claim_text,
                     "timestamp": ts,
@@ -340,6 +346,40 @@ def _synthesize_claim(query: str, results: dict, evidence: list[dict]) -> Option
         "timestamp": None,
         "claim_type": "INFERENCE",
     }
+
+
+def _pick_subject_label(top: dict) -> str:
+    """Choose a concrete, verifiable subject label for a claim.
+
+    The forensic verifier only recognises explicit entity types (person, car,
+    backpack, ...); generic words such as "subject" fail subject validation.
+    Prefer a person-style label followed by any known entity alias, then the
+    first object label, falling back to "subject".
+    """
+    candidates: list[str] = []
+    for key in ("label", "subject", "object"):
+        val = top.get(key)
+        if isinstance(val, str) and val:
+            candidates.append(val)
+    for obj in top.get("objects") or []:
+        if isinstance(obj, str):
+            candidates.append(obj)
+    if not candidates:
+        return "subject"
+    from app.rag.video_rag import ENTITY_ALIASES
+
+    def _known(lbl: str) -> bool:
+        low = lbl.lower()
+        return any(low.startswith(grp) or any(grp == low or a in low for a in aliases)
+                   for grp, aliases in ENTITY_ALIASES.items())
+
+    for lbl in candidates:
+        if str(lbl).lower().startswith("person") or str(lbl).lower().startswith("people"):
+            return str(lbl)
+    for lbl in candidates:
+        if _known(lbl):
+            return str(lbl)
+    return str(candidates[0])
 
 
 def _synthesize_answer(query, claims, verification_result, evidence, results) -> tuple[str, bool]:

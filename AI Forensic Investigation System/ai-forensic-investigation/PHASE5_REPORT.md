@@ -211,3 +211,31 @@ Phase 5 delivers the durable forensic evidence layer: capture of every tracking 
 ## 25. Delta vs Phase 4 report
 
 Added: the whole `backend/app/evidence/` package (4 modules), `ForensicEvidence` + `VlmObservationRecord` models and migration `0006`, evidence lifecycle/hooks/snapshot wiring in the live manager, `/evidence/live` RBAC router (write path reindex handler hardened against detached instances), `EVIDENCE_*` config, storage nested-dir fix, frontend evidence panel + typed API client, and 46 new tests. New Phase 5 artifacts: the evidence lock-fix (dedup race), the storage dir fix, the conftest `_reset_evidence` fixture, and documentation of the concurrent-pytest DB race. Caveats carried forward unchanged: missing `benchmark.jsonl` (6 pre-existing eval failures), no ffmpeg, MinIO/Qdrant offline, CPU-only, no physical device/real-network E2E, no real VLM/YOLO run. Phase 5's real dependency: standing up MinIO + Qdrant before Phase 6 agent/RAG work leans on the real backends. Verdict stays green — READY FOR PHASE 6 — because capture → storage → dedup → indexing → API → frontend is proven end-to-end in-process with honest enumeration of every NOT TESTED real-service surface.
+---
+
+## PHYSICAL LIVE CAMERA VERIFICATION (added 2026-09-27)
+
+Verdict for this phase: **VERIFIED** against real services; the physical
+laptop-webcam capture step is **NOT TESTED** (no capture device is reachable from
+the verification container).
+
+| Item | Result |
+|---|---|
+| webcam transport (shares one `LocalOpenCVCameraSource` with `droidcam_usb`) | IMPLEMENTED + VERIFIED (14 unit/integration tests) |
+| Capture device on indices 0-3 | NOT TESTED — `/dev/video*` absent in the container |
+| Docker cannot see a host camera | CONFIRMED (`verify_webcam.py --probe` → `RESULT: NO DEVICE`) |
+| PostgreSQL 15.19 / MinIO / Qdrant (dims 384) | PASS — real services, no fallback |
+| YOLO | `yolov8n.pt` on **CPU** (`torch.cuda.is_available() == False`) |
+| Real VLM provider | NOT TESTED — no credentials configured |
+| Defect fixed here | `reportlab==4.2.5` added so reports render as a real PDF instead of degrading to markdown |
+
+To complete the physical step, run the backend host-native and follow
+`WEBCAM_SETUP.md`:
+
+``bash
+python backend/scripts/verify_webcam.py --probe
+python backend/scripts/verify_webcam.py --device 0 --seconds 10
+python backend/scripts/verify_live_webcam.py --base-url http://127.0.0.1:8000 --device 0 --seconds 45
+``
+
+Full evidence: `FINAL_SYSTEM_REPORT.md`.

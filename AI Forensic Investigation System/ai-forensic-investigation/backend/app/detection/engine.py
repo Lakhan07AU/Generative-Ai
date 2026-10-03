@@ -110,6 +110,30 @@ class DetectionEngine:
 
     # ----------------------------------------------------------------- init
 
+    def model_info(self) -> dict:
+        """Describe the REAL loaded model (never infer a device that is unused).
+
+        ``device`` reports what the model actually runs on - when the request is
+        CUDA but the loaded torch model is on CPU, ``device`` is reported as
+        ``cpu`` so no GPU claim is made without evidence.
+        """
+        actual_device = "unloaded"
+        if self._model is not None:
+            try:
+                actual_device = str(next(iter(self._model.model.parameters())).device)
+            except Exception:  # noqa: BLE001 - introspection is best effort
+                actual_device = self.device
+        return {
+            "model": os.path.basename(self.model_path) if self.model_path else None,
+            "model_path": self.model_path,
+            "requested_device": self.device,
+            "device": actual_device,
+            "imgsz": self.imgsz,
+            "conf_threshold": self.conf_threshold,
+            "iou_threshold": self.iou_threshold,
+            "classes": len(self._class_names),
+        }
+
     def _validate_and_load(self) -> None:
         if not self.model_path:
             raise ModelNotFoundError("No YOLO model path configured (YOLO_MODEL is empty)")
