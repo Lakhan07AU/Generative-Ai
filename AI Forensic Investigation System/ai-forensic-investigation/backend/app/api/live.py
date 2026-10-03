@@ -12,11 +12,12 @@ import asyncio
 import logging
 import os
 import time
+from datetime import datetime
 from functools import partial
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
@@ -28,9 +29,11 @@ from app.audit.service import record_audit
 from app.live.manager import SessionStatus, manager
 from app.live.synthetic import FrameSimulationFeeder
 from app.live.ipcam_camera import IpCameraSource
+from app.live.rtsp_camera import RtspCameraSource
 from app.live.usb_camera import UsbCameraSource
 from app.live.webcam_camera import WebcamCameraSource
 from app.live.video_feeder import VideoFileFeeder
+from app.live.pairing import create_pairing, pairing_url, render_pairing_qr, consume_pairing, QRError
 
 logger = logging.getLogger(__name__)
 
@@ -110,14 +113,14 @@ def _on_file_finished(runtime):
 
 
 def _on_source_finished(runtime):
-    """USB/DroidCam source thread ended (device unplugged or gave up)."""
+    """OpenCV source thread ended (device unplugged, stream died, or gave up)."""
     try:
         source = getattr(runtime, "camera_source", None)
         if source is not None:
             source.stop()
             runtime.camera_source = None
         if runtime.status in SessionStatus.active_values():
-            runtime.mark_error("USB/DroidCam capture ended")
+            runtime.mark_error(f"{getattr(runtime, 'transport', 'camera')} capture ended")
         runtime.stop()
         manager.stop(runtime.camera_id)
     except Exception:
@@ -142,7 +145,7 @@ def start_live_camera(
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     transport = payload.transport or "webrtc"
-    supported = ("webrtc", "simulation", "file", "droidcam_usb", "webcam", "ipcam")
+    supported = ("webrtc", "simulation", "file", "droidcam_usb", "webcam", "ipcam", "rtsp")
     if transport not in supported:
         raise HTTPException(status_code=422, detail=f"Unsupported transport: {transport}")
     runtime = _start_runtime(db, camera, current_user, payload)
@@ -193,6 +196,22 @@ def start_live_camera(
             raise HTTPException(status_code=503, detail=f"{label} unavailable: {exc}")
         runtime.camera_source = source
         runtime.mark_live()
+    if transport == "rtsp":
+        # A CCTV camera pulled over RTSP through the shared OpenCV capture
+        # implementation. The stream URL comes from the request, falling back to
+        # the camera's configured ONVIF/RTSP identity so an operator can simply
+        # POST /start with transport=rtsp after registering the camera.
+        rtsp_url = payload.stream_url or camera.rtsp_url or camera.rtsp_url_alt
+        try:
+            source = RtspCameraSource(runtime, stream_url=rtsp_url)
+            source.on_finished = lambda: _on_source_finished(runtime)
+            source.start()
+        except Exception as exc:  # noqa: BLE001 - OpenCV/network/config failure
+            runtime.mark_error(f"RTSP capture failed: {exc}")
+            manager.stop(camera.id)
+            raise HTTPException(status_code=503, detail=f"RTSP unavailable: {exc}")
+        runtime.camera_source = source
+        runtime.mark_live()
     return _camera_session_out(runtime)
 
 
@@ -228,6 +247,77 @@ def stop_live_camera(
         details=f"camera_id={camera_id} session_id={runtime.session_db_id}",
     )
     return _camera_session_out(runtime)
+
+
+# ------------------------------------------------------------ QR pairing
+
+
+@router.post("/live/cameras/{camera_id}/pair", status_code=status.HTTP_201_CREATED)
+def create_camera_pairing(
+    camera_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*LIVE_ROLES)),
+):
+    """Create a single-use pairing token for ``camera_id``.
+
+    The returned ``qr_url`` renders a QR code of the frontend mobile page URL.
+    The token binds the scanning device to THIS camera and THIS creator, and is
+    consumed on first use (see the signaling WebSocket).
+    """
+    camera = db.query(Camera).filter(Camera.id == camera_id).first()
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    pairing = create_pairing(db, camera, current_user)
+    record_audit(
+        db,
+        "camera_pairing_create",
+        user_id=current_user.id,
+        entity_type="camera",
+        entity_id=camera_id,
+        details=f"camera_id={camera_id} pairing={pairing.pairing_id[:8]} expires_at={pairing.expires_at.isoformat()}",
+    )
+    return {
+        "pairing_id": pairing.pairing_id,
+        "camera_id": camera.id,
+        "expires_at": pairing.expires_at.isoformat(),
+        "url": pairing_url(pairing.pairing_id, camera.id),
+        "qr_url": f"/live/cameras/{camera.id}/pair/qr.png?pairing_id={pairing.pairing_id}",
+    }
+
+
+@router.get("/live/cameras/{camera_id}/pair/qr.png")
+def camera_pairing_qr(
+    camera_id: int,
+    pairing_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*LIVE_ROLES)),
+):
+    """Render the QR PNG for an outstanding pairing owned by the caller.
+
+    Refusing to render another user's pairing keeps the id opaque to others;
+    the pairing itself is consumed exactly once at the signaling WebSocket.
+    """
+    from app.database.models import CameraPairing
+
+    pairing = (
+        db.query(CameraPairing)
+        .filter(
+            CameraPairing.pairing_id == pairing_id,
+            CameraPairing.camera_id == camera_id,
+            CameraPairing.created_by_user_id == current_user.id,
+            CameraPairing.consumed_at.is_(None),
+        )
+        .first()
+    )
+    if pairing is None:
+        raise HTTPException(status_code=404, detail="Pairing not found or already consumed")
+    if pairing.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=410, detail="Pairing expired")
+    try:
+        png = render_pairing_qr(pairing_url(pairing.pairing_id, pairing.camera_id))
+    except QRError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    return Response(content=png, media_type="image/png")
 
 
 @router.get("/live/cameras/{camera_id}/status", response_model=LiveStatusOut)
@@ -333,6 +423,56 @@ async def live_camera_stream_mjpeg(
     )
 
 
+@router.get("/live/cameras/{camera_id}/frame")
+async def live_camera_latest_frame(
+    camera_id: int,
+    token: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
+    """Most recent analysed frame as a single JPEG.
+
+    This is a *snapshot* of the exact frame the detector consumed - it never
+    opens a second capture, so the preview can never disagree with the
+    evidence. The browser polls this at ~4-5 FPS and paints the bounding boxes
+    it already receives over the matching detection WebSocket.
+
+    ``204 No Content`` means the session is alive but has not produced an
+    encodable frame yet; the client should simply poll again rather than treat
+    it as an error. The token is a query parameter because ``fetch`` for a blob
+    is simpler than juggling a header here, and auth/role checks match the
+    other live endpoints exactly.
+    """
+    user = _user_from_token(db, token)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    if user.role not in LIVE_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+    runtime = manager.get(camera_id)
+    if runtime is None or runtime.status not in SessionStatus.active_values():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No active live session")
+    if runtime.transport == "webrtc":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="WebRTC sessions use the native video track, not the snapshot endpoint",
+        )
+
+    snapshot = runtime.latest_preview()
+    if snapshot is None:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    jpeg, sequence, epoch = snapshot
+    return Response(
+        content=jpeg,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate",
+            "Pragma": "no-cache",
+            "X-Frame-Sequence": str(sequence),
+            "X-Frame-Timestamp": f"{epoch:.6f}",
+        },
+    )
+
+
 # --------------------------------------------------------- WebSocket auth
 
 
@@ -369,6 +509,53 @@ async def _ws_authenticate(websocket: WebSocket, db: Session, require_roles_any:
         await websocket.close(code=1008, reason="Authentication failed")
         return None
     if require_roles_any and user.role not in require_roles_any:
+        await websocket.send_json({"type": "error", "detail": "Insufficient permissions"})
+        await websocket.close(code=1008, reason="Insufficient permissions")
+        return None
+    return user
+
+
+async def _ws_authenticate_signaling(
+    websocket: WebSocket, db: Session, camera_id: int
+) -> Optional[User]:
+    """Authenticate the signaling socket with a user token OR a pairing code.
+
+    A normal investigator presents ``{"type":"auth","token":<jwt>}``. A QR-
+    paired device presents ``{"type":"auth","pair":<pairing_id>}``, which is
+    validated against the camera and consumed exactly once; the connection then
+    acts with the pairing creator's identity and live-role permissions for this
+    camera only.
+    """
+    try:
+        msg = await websocket.receive_json()
+    except (ValueError, RuntimeError):
+        await websocket.close(code=1008, reason="Invalid signaling message")
+        return None
+    if msg.get("type") != "auth":
+        await websocket.send_json({"type": "error", "detail": "First message must be 'auth'"})
+        await websocket.close(code=1008, reason="Missing auth message")
+        return None
+
+    if msg.get("pair"):
+        creator = consume_pairing(db, msg.get("pair"), camera_id)
+        if creator is None:
+            await websocket.send_json(
+                {"type": "error", "detail": "Invalid, expired, reused, or camera-mismatched pairing code"}
+            )
+            await websocket.close(code=1008, reason="Pairing rejected")
+            return None
+        if creator.role not in LIVE_ROLES:
+            await websocket.send_json({"type": "error", "detail": "Insufficient permissions"})
+            await websocket.close(code=1008, reason="Insufficient permissions")
+            return None
+        return creator
+
+    user = _user_from_token(db, msg.get("token"))
+    if user is None:
+        await websocket.send_json({"type": "error", "detail": "Invalid or expired token"})
+        await websocket.close(code=1008, reason="Authentication failed")
+        return None
+    if user.role not in LIVE_ROLES:
         await websocket.send_json({"type": "error", "detail": "Insufficient permissions"})
         await websocket.close(code=1008, reason="Insufficient permissions")
         return None
@@ -429,7 +616,7 @@ async def ws_live_signaling(websocket: WebSocket, camera_id: int, db: Session = 
     runtime = None
     owns_session = False  # True only when THIS socket created the runtime
     try:
-        user = await _ws_authenticate(websocket, db, require_roles_any=LIVE_ROLES)
+        user = await _ws_authenticate_signaling(websocket, db, camera_id)
         if user is None:
             return
         camera = db.query(Camera).filter(Camera.id == camera_id).first()

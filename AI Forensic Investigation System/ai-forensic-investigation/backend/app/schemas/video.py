@@ -9,6 +9,27 @@ class CameraCreate(BaseModel):
     description: Optional[str] = None
     camera_type: Optional[str] = "CCTV"  # CCTV | MOBILE | OTHER
     stream_source: Optional[str] = None
+    # CCTV automation defaults (migration 0009)
+    auto_process: Optional[bool] = False
+    onvif_host: Optional[str] = None
+    onvif_username: Optional[str] = None
+    rtsp_url: Optional[str] = None
+    rtsp_url_alt: Optional[str] = None
+    max_processing_fps: Optional[float] = None
+
+
+class CameraUpdate(BaseModel):
+    camera_name: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    camera_type: Optional[str] = None
+    stream_source: Optional[str] = None
+    auto_process: Optional[bool] = None
+    onvif_host: Optional[str] = None
+    onvif_username: Optional[str] = None
+    rtsp_url: Optional[str] = None
+    rtsp_url_alt: Optional[str] = None
+    max_processing_fps: Optional[float] = None
 
 
 class CameraOut(BaseModel):
@@ -20,6 +41,18 @@ class CameraOut(BaseModel):
     stream_source: Optional[str] = None
     is_live: bool = False
     stream_status: str = "OFFLINE"
+    # CCTV automation (migration 0009). onvif_username is shadowed so the
+    # credential reference never leaks; raw secrets are never serialized.
+    auto_process: Optional[bool] = False
+    onvif_host: Optional[str] = None
+    onvif_username: Optional[str] = None
+    rtsp_url: Optional[str] = None
+    rtsp_url_alt: Optional[str] = None
+    last_seen_at: Optional[datetime] = None
+    health_status: str = "OFFLINE"
+    last_error: Optional[str] = None
+    reconnect_attempts: int = 0
+    max_processing_fps: Optional[float] = None
     created_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

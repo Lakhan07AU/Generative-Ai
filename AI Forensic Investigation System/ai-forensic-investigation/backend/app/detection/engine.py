@@ -14,6 +14,7 @@ model (this is the concurrency-safe sharing mechanism required by Phase 2).
 from __future__ import annotations
 
 import logging
+import os
 import threading
 import time
 from typing import Dict, List, Optional
@@ -298,8 +299,6 @@ def as_bgr_uint8(frame) -> np.ndarray:
 
 
 def _file_exists(path: str) -> bool:
-    import os
-
     return os.path.isfile(path)
 
 

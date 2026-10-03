@@ -157,6 +157,10 @@ class Settings(BaseSettings):
     # previous 4 MB default rejected 1080p sources outright, which left a
     # session reporting "LIVE" with zero sampled frames and no detections.
     LIVE_MAX_FRAME_BYTES: int = 32 * 1024 * 1024
+    # QR pairing: base URL used in the pairing QR code (the public origin of
+    # the frontend) and the lifetime of a single-use pairing token.
+    LIVE_QR_PAIRING_URL_BASE: str = "http://localhost:3000"
+    LIVE_PAIRING_EXPIRE_SECONDS: int = 300
     # ICE servers (STUN/TURN) used by the receive-only WebRTC peer. JSON list of
     # RTCIceServer objects with "urls" (and optional "username"/"credential"),
     # e.g. [{"urls": ["stun:stun.l.google.com:19302"]}]. Empty by default:
@@ -241,6 +245,50 @@ class Settings(BaseSettings):
     # After streaming again for this long, the outage is forgiven and the
     # restart budget is restored, so only *consecutive* failures end a session.
     IPCAM_RECONNECT_RESET_SECONDS: float = 60.0
+
+    # -------------------------------------------------------------- rtsp
+    # CCTV camera RTSP capture (transport "rtsp"). Same interface and reconnect
+    # policy as the other OpenCV sources; the URL is strictly rtsp(s):// and
+    # the FFmpeg demuxer is used. Used directly by the auto-processing
+    # supervisor for cameras flagged auto_process=True.
+    RTSP_STREAM_URL: str = ""
+    RTSP_FPS: float = 10.0
+    RTSP_WIDTH: int = 1280
+    RTSP_HEIGHT: int = 720
+    RTSP_STALE_SECONDS: float = 5.0
+    RTSP_MAX_RESTARTS: int = 3
+    RTSP_MAX_CONSECUTIVE_FAILURES: int = 10
+    RTSP_CAPTURE_BACKENDS: str = ""
+    RTSP_RECONNECT_BACKOFF_SECONDS: float = 3.0
+    RTSP_RECONNECT_RESET_SECONDS: float = 60.0
+    # Carry RTP over TCP instead of lossy UDP for RTSP. This materially improves
+    # frame continuity across Wi-Fi and NAT at the cost of a little latency.
+    RTSP_TRANSPORT_TCP: bool = True
+    # Bounds the FFmpeg open handshake (ms) for backends that expose
+    # CAP_PROP_OPEN_TIMEOUT_MSEC; 0 leaves the backend default untouched.
+    # 10 s keeps an unreachable host from pinning a capture worker for the
+    # FFmpeg default (~60 s) while staying generous for slow real cameras.
+    RTSP_OPEN_TIMEOUT_SECONDS: float = 10.0
+
+    # ---- CCTV auto-processing supervisor ---------------------------------
+    # Background supervisor that automatically starts and keeps RTSP live
+    # sessions for every camera flagged auto_process=True (migration 0009).
+    # Off by default so the service never opens streams or loads detection
+    # unless a deployment explicitly enables it. When enabled the supervisor
+    # reconciles cameras on a fixed interval, cold-restarting a camera that
+    # gave up (its source ran out of internal restarts) no faster than
+    # LIVE_AUTO_PROCESS_MIN_RESTART_INTERVAL_SECONDS, and persists camera
+    # health (health_status / last_seen_at / last_error /
+    # reconnect_attempts).
+    LIVE_AUTO_PROCESS_ENABLED: bool = False
+    # Reconcile interval for the supervisor (seconds).
+    LIVE_AUTO_PROCESS_POLL_SECONDS: float = 15.0
+    # Hard floor between supervisor-initiated restarts of a failed camera, so an
+    # offline stream cannot hot-loop the service.
+    LIVE_AUTO_PROCESS_MIN_RESTART_INTERVAL_SECONDS: float = 15.0
+    # Whether auto-processed sessions also start the detection pipeline.
+    # Set false for capture-only ingest on CPU-limited hosts.
+    LIVE_AUTO_PROCESS_DETECTION: bool = True
 
     # ---- Phase 2: Real-time YOLO detection -------------------------------
 

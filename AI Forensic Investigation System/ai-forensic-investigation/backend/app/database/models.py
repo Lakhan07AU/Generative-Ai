@@ -46,6 +46,25 @@ class Camera(Base):
     created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    # CCTV automation / auto-processing schema (migration 0009).
+    # auto_process: automatically start/keep this camera's stream processing.
+    auto_process = Column(Boolean, default=False, nullable=False)
+    # ONVIF / RTSP identity. credential_ref holds an OPAQUE reference to stored
+    # credentials (never the raw secret), so camera secrets can be rotated
+    # without touching this table.
+    onvif_host = Column(String(255), nullable=True)
+    onvif_username = Column(String(255), nullable=True)
+    credential_ref = Column(String(512), nullable=True)
+    rtsp_url = Column(String(512), nullable=True)
+    rtsp_url_alt = Column(String(512), nullable=True)
+    # Health / reconnect bookkeeping for the auto-processing supervisor.
+    last_seen_at = Column(DateTime, nullable=True)
+    health_status = Column(String(50), default="OFFLINE", nullable=False)
+    last_error = Column(Text, nullable=True)
+    reconnect_attempts = Column(Integer, default=0, nullable=False)
+    # Optional per-camera processing budget (frames/sec cap); None = unrestricted.
+    max_processing_fps = Column(Float, nullable=True)
+
     created_by = relationship("User", back_populates="cameras")
     videos = relationship("Video", back_populates="camera")
     clips = relationship("Clip", back_populates="camera")
@@ -450,6 +469,34 @@ class InvestigationRun(Base):
 # ---------------------------------------------------------------------------
 # Part 4 - Human review + report generation
 # ---------------------------------------------------------------------------
+
+
+class CameraPairing(Base):
+    """A single-use QR pairing token that binds a device to a camera.
+
+    The desktop investigator creates a pairing; its ``pairing_id`` (UUID) is
+    rendered into a QR code and scanned by the mobile/camera UI. Presenting the
+    id over the signaling WebSocket authenticates the device as if it were the
+    creating user, but ONLY for this camera, ONLY once (``consumed_at``), and
+    only before ``expires_at``. Reuse / expiry are enforced server-side in the
+    signaling path, so a printed QR cannot be replayed.
+    """
+
+    __tablename__ = "camera_pairings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    pairing_id = Column(String(64), unique=True, index=True, nullable=False)
+    camera_id = Column(Integer, ForeignKey("cameras.id"), nullable=False)
+    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    expires_at = Column(DateTime, nullable=False)
+    consumed_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    camera = relationship("Camera")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<CameraPairing {self.pairing_id} consumed={self.consumed_at is not None}>"
 
 
 class Report(Base):

@@ -4,6 +4,9 @@ No phone is required: a fake ``cv2`` module is injected so the transport logic
 (URL defaults, backend order, mandatory URL, credential redaction, open failure,
 ingest hand-off) is exercised deterministically. Real stream reachability is
 verified by ``backend/scripts/verify_ipcam.py`` against an actual device.
+
+All URLs below use RFC 5737 documentation ranges (TEST-NET-2/3), which are
+never routable to a real host, so no test here can contact a physical camera.
 """
 
 import sys
@@ -17,7 +20,8 @@ from app.live.ipcam_camera import IpCameraSource
 from app.live.source import CameraSource
 from app.live.webcam_camera import LocalOpenCVCameraSource
 
-URL = "http://10.5.176.115:8080/video"
+# RFC 5737 TEST-NET-3: reserved for documentation, never a real device.
+URL = "http://203.0.113.10:8080/video"
 
 
 class FakeRuntime:
@@ -162,9 +166,9 @@ def test_non_network_url_is_rejected():
 
 
 @pytest.mark.parametrize("url", [
-    "http://10.5.176.115:8080/video",
-    "https://cam.local/stream",
-    "rtsp://10.5.176.115:554/live",
+    "http://203.0.113.10:8080/video",
+    "https://cam.example/stream",
+    "rtsp://203.0.113.10:554/live",
 ])
 def test_accepted_url_schemes(url, fake_cv2):
     install, _ = fake_cv2
@@ -249,19 +253,19 @@ def test_health_reports_url_and_backend(fake_cv2):
 def test_health_redacts_credentials(fake_cv2):
     install, _ = fake_cv2
     install()
-    url = "http://admin:secret@10.5.176.115:8080/video"
+    url = "http://admin:secret@203.0.113.10:8080/video"
     src = IpCameraSource(FakeRuntime(), stream_url=url)
     src.connect()
     health = src.health()
     assert "secret" not in health["stream_url"]
-    assert "admin:***@10.5.176.115:8080" in health["stream_url"]
+    assert "admin:***@203.0.113.10:8080" in health["stream_url"]
     src.disconnect()
 
 
 def test_error_message_redacts_credentials(fake_cv2):
     install, _ = fake_cv2
     install(open_ok=False)
-    url = "http://admin:secret@10.5.176.115:8080/video"
+    url = "http://admin:secret@203.0.113.10:8080/video"
     src = IpCameraSource(FakeRuntime(), stream_url=url)
     with pytest.raises(RuntimeError) as exc:
         src.connect()

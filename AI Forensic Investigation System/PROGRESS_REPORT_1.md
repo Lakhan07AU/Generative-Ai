@@ -8,13 +8,14 @@
 | **Project title** | AI Forensic Investigation System |
 | **Project type** | Academic capstone — Generative AI application development |
 | **Report** | Progress Report 1 (first internal review) |
-| **Reporting period** | Phase 0 – Phase 9 (2026-09-11 → 2026-09-27) |
-| **Date of submission** | 2026-09-28 |
+| **Reporting period** | Phase 0 – Phase 9, plus camera-hardening and engineering audit (2026-09-11 → 2026-09-29) |
+| **Date of submission** | 2026-09-29 |
 | **Team members** | _[Name, Roll No.]_ · _[Name, Roll No.]_ · _[Name, Roll No.]_ |
 | **Project guide** | _[Guide Name, Designation]_ |
 | **Department** | _[Department, Institution]_ |
 | **Repository** | `AI Forensic Investigation System/ai-forensic-investigation` |
-| **Overall status** | **Core system COMPLETE and VERIFIED — 1 open blocker (physical camera chain NOT TESTED)** |
+| **Version control** | branch `main`, HEAD `413dab6d`, working tree clean (0 real content changes) |
+| **Overall status** | **Core pipeline COMPLETE and VERIFIED — NOT READY FOR CERTIFICATION (5 open items, §13)** |
 
 > **Note on honesty of this report.** Every status in this document is either
 > **PASS** (executed against real services and recorded with evidence) or
@@ -62,11 +63,12 @@ lets an investigator ask questions in natural language:
 > *"Generate the incident report with supporting evidence."*
 
 **Progress to date.** A working, containerised, test-verified system has been
-delivered across ten increments (foundation + Phases 1–9). The complete chain
-works end to end against real infrastructure:
+delivered across ten increments (foundation + Phases 1–9) followed by a camera
+hardening and engineering audit cycle. The complete chain works end to end
+against real infrastructure:
 
 ```
-Live / uploaded CCTV
+Live / uploaded CCTV  (WebRTC phone · IP camera · laptop webcam · USB · file)
    → frame ingestion → YOLOv8 detection → IoU multi-object tracking
    → event generation → VLM semantic observation
    → evidence capture (JPEG + SHA-256) → MinIO + PostgreSQL
@@ -76,24 +78,27 @@ Live / uploaded CCTV
    → 15-section PDF incident report
 ```
 
-**Measured state at the close of this period**
+**Measured state, verified live on 2026-09-29**
 
 | Indicator | Value |
 |---|---|
 | Backend Python modules | 139 files under `backend/app/` |
-| Automated tests | **430 passing, 0 failures, 0 errors** |
-| Test modules | 42 files under `tests/` |
-| Alembic migrations | 8 (`0001_initial` → `0008_phase8_forensics`, head applied) |
-| Frontend routes | 20 (Next.js 14.2.5 production build clean) |
+| Automated tests | **526 collected — 524 passed, 0 failures; 2 environment-blocked** (see §8.5) |
+| Test modules | 40 files under `tests/` |
+| Alembic migrations | **10** (`0001_initial` → `0010_camera_pairings`, head applied) |
+| Frontend routes | **22** (Next.js 14.2.5 production build clean, incl. new `/live/mobile`) |
 | End-to-end verifier | 11 stages, 0 failed |
 | Phase verifiers | Phase 5 **PASS**, Phase 6 **PASS (103 checks)**, Phase 7 **PASS (38 checks)**, Phase 8 **PASS (46 checks)** |
 | Demo dataset verifier | **196 checks, 0 failures**, 7/7 sections |
-| Demo investigation evidence | 113 artefacts indexed, 0 failed |
-| Real infrastructure used | PostgreSQL 15.19, MinIO (S3), Qdrant v1.9.4 (384-dim), Docker Compose |
+| Evidence indexed (live `/health`) | **1464 indexed, 0 failed, 0 dropped, 0 errors** |
+| Live sessions (live `/health`) | 2 active WebRTC sessions (cameras 8, 9) |
+| Real infrastructure used | PostgreSQL 15.19, MinIO (S3), Qdrant v1.9.4 (384-dim), Docker Compose — **no in-memory fallback** |
 | Inference device | **CPU only** (`torch.cuda.is_available() == False`) |
 | Detection throughput | ~138 ms/frame (live sim), ~212 ms/frame (demo video), `yolov8n` @ 640px |
 | Search latency | 62–146 ms (RAG), 182–206 ms (agent run) |
-| Open blockers | **1** — physical camera chain NOT TESTED (§13) |
+| Real IP-camera capture | **PASS** — 572 frames received / 572 sampled / 529 processed / 0 inference errors / ~9 FPS |
+| IP camera re-verified today | **PASS** — 30 frames @ 1920×1080, ~31 FPS, from inside the container |
+| Open items | **5** (ONVIF, dedicated RTSP source, auto CCTV processing, CCTV dashboard, security sweep) |
 
 ---
 
@@ -139,15 +144,20 @@ a structured incident report.*
 | # | Objective | Metric | Target | Achieved |
 |---|---|---|---|---|
 | O1 | End-to-end ingest → report pipeline works | E2E verifier stages | 11/11 | **11/11 PASS** |
-| O2 | Automated test coverage | pytest | 0 failures | **430 passed, 0 failed** |
+| O2 | Automated test coverage | pytest | 0 failures | **524 passed, 0 failed** (2 env-blocked) |
 | O3 | Natural-language video search | Demo RAG verifier | all cases | **103 checks PASS** |
 | O4 | Bounded agentic investigation | Agent verifier | all cases | **38 checks PASS** |
 | O5 | Verified, traceable findings | Forensic verifier | all cases | **46 checks PASS** |
 | O6 | PDF incident report | Real PDF via ReportLab | renders + stores | **PASS** (~30 ms render) |
 | O7 | Grounded demo dataset | Demo verifier | 7 sections | **196 checks, 0 failures** |
-| O8 | Frontend production build | `npm run build` | clean | **PASS (20 routes)** |
+| O8 | Frontend production build | `npm run build` | clean | **PASS (22 routes)** |
 | O9 | Real infrastructure (no mocks) | PG/MinIO/Qdrant live | all live | **PASS**, no in-memory fallback |
-| O10 | Physical camera end-to-end | webcam → report | PASS | **NOT TESTED** — blocker |
+| O10 | Real network camera capture | IP camera → detections | PASS | **PASS** (572 frames, 529 processed, 0 errors) |
+| O11 | Device pairing without sharing a JWT | QR pairing | working | **PASS** (12/12 self-test checks) |
+| O12 | Honest model/device reporting | `model_info()` | real values | **PASS** — after fixing defect #16 |
+| O13 | ONVIF discovery + dedicated RTSP source | implementation | present | **NOT IMPLEMENTED** |
+| O14 | Automatic CCTV processing | implementation | present | **NOT IMPLEMENTED** |
+| O15 | Full security sweep | audit | complete | **NOT PERFORMED** |
 
 ---
 
@@ -456,6 +466,60 @@ timestamped dashboard with click-to-seek.
 - Live status now reports the **actual** YOLO model, torch device and mean
   inference latency, never an assumed CUDA device.
 
+### 7.11 IP camera transport, QR device pairing and latest-frame polling
+
+Work completed after the Phase 9 cycle, verified 2026-09-29.
+
+**IP camera transport (`ipcam`).** A new `app/live/ipcam_camera.py` source lets
+the backend pull a **real network stream** from a phone running an IP-camera app
+(Android "IP Webcam", DroidCam, or any RTSP/MJPEG endpoint). It shares the
+existing `LocalOpenCVCameraSource` / `CameraSource` abstraction, so IP capture
+reuses the identical ingest → detection → tracking → evidence path. An
+unreachable stream fails the start request with **HTTP 503** and never fakes
+frames.
+
+*Verified end to end:* 572 frames received, 572 sampled, **529 processed by
+YOLO with 0 inference errors, ~9 FPS**. Re-verified on 2026-09-29 from inside
+the backend container: `isOpened: True`, 30 frames at **1920×1080, ~31 FPS**.
+
+**QR device pairing.** `app/live/pairing.py` implements single-use, expiring,
+camera-and-creator-bound pairing tokens rendered as QR codes in pure Python
+(`qrcode` + Pillow). `POST /live/cameras/{id}/pair` returns a pairing id, URL and
+QR; the phone scans it, opens `/live/mobile`, and the signalling socket consumes
+the code — **so a phone can be onboarded without the operator ever pasting a JWT
+into a phone browser**. The session is opened under the *creator's* identity, and
+the other sockets (status/detection/tracking/VLM) remain JWT-only.
+`verify_qr_pairing.py` self-test: **12/12 checks PASS** over real HTTP +
+WebSocket, covering accept, reject, replay, wrong-camera and expiry.
+
+**Latest-frame JPEG endpoint.** `GET /live/cameras/{id}/frame` returns the most
+recent frame as a JPEG with `X-Frame-Sequence` and `X-Frame-Timestamp` headers,
+returning **204 (never a fake image)** before the first frame. The frontend polls
+it at ~4.5 FPS, swapping each blob onto a fresh object URL and revoking the
+previous one, with an in-flight guard and full cleanup on stop/unmount. The
+encoder is armed only while an MJPEG subscriber or a recent poller exists, so
+WebRTC sessions still pay no encode cost they do not use.
+
+**Camera automation schema (migrations `0009`, `0010`).** `cameras` gained
+`auto_process`, `onvif_host`, `onvif_username`, `credential_ref` (a reference,
+not a plaintext secret), `rtsp_url`, `rtsp_url_alt`, `last_seen_at`,
+`health_status`, `last_error`, `reconnect_attempts`, `max_processing_fps`, plus
+`ix_cameras_auto_process`. A new `camera_pairings` table backs the QR flow.
+`PATCH /cameras/{id}` was added. Both migrations are applied live and `alembic
+current` is `0010_camera_pairings (head)`.
+
+**Test hermeticity fix.** `tests/test_live_webcam_source.py` was posting a real
+`http://10.5.176.115:8080/video` to the live start endpoint, so the unit suite
+made genuine outbound LAN calls and would have started a real capture session had
+the phone been reachable — test outcomes depended on the user's network state.
+The test now uses the never-listening loopback `127.0.0.1:9` and asserts a
+strict 503; the IP-camera tests use RFC 5737 documentation ranges
+(`203.0.113.0/24`) and `cam.example`. The suite now dials **loopback only**.
+
+**Credential hygiene.** `frontend/scripts/{key,cert}.pem` were sitting
+untracked and un-ignored. `*.pem` and `*.key` are now in `.gitignore`; they are
+development-only keys and no production secret is involved.
+
 ---
 
 ## 8. Verification and Evaluation Results
@@ -481,15 +545,52 @@ Three independent layers are used, so that a green result means something:
 | Phase 6 — Video RAG | **PASS** | 103 checks, 0 failures against the live API |
 | Phase 7 — LangGraph agent | **PASS** | full graph, evidence-scoped retrieval, UNKNOWN abstention, review state machine |
 | Phase 8 — forensic analysis | **PASS** | 46 checks; timeline, verification, gaps, contradiction; real PDF via ReportLab in MinIO |
-| Test suite | **PASS** | 430 tests, 0 failures, 0 errors |
-| Frontend build | **PASS** | `npm run build` clean, 20 routes |
+| Test suite | **PASS** | **526 collected, 524 passed, 0 failures**; 2 blocked by host Application Control (§8.5) |
+| Frontend build | **PASS** | `npm run build` clean, **22 routes** incl. `/live/mobile` |
 | End-to-end (11 stages) | **PASS** | 0 failed |
 | Evidence integrity | **CLEAN** | DB ↔ Qdrant ↔ MinIO consistent, 0 orphans |
+| Live `/health` | **PASS** | database ok · qdrant `backend=qdrant` · storage `backend=minio` · indexer **1464 indexed / 0 failed** · 2 active WebRTC sessions |
 | Demo dataset | **PASS** | 196 checks, 0 failures, 7/7 sections |
-| **Physical webcam capture** | **NOT TESTED** | no `/dev/video*` in the container; probe → `RESULT: NO DEVICE` |
-| **Webcam → report with live frames** | **NOT TESTED** | depends on the above |
+| Alembic | **PASS** | `0010_camera_pairings` (head), applied live |
+| QR pairing self-test | **PASS** | 12/12 checks over real HTTP + WebSocket |
+| **Real IP camera** | **PASS** | 572 frames / 529 YOLO-processed / 0 errors; re-verified today at 1920×1080, ~31 FPS |
+| **Laptop webcam in Docker** | **NOT TESTED** | no `/dev/video*` in the container; host camera not passed through |
+| **Laptop webcam on host** | **PARTIAL** | opens at 640×480, sustained ≈1 FPS |
+| **ONVIF discovery** | **NOT IMPLEMENTED** | zero occurrences of `onvif` in code or docs |
+| **Dedicated `RtspCameraSource`** | **PARTIAL** | `ipcam_camera.py` accepts `rtsp://` generically via the shared path; no distinct class |
+| **Automatic CCTV processing** | **NOT IMPLEMENTED** | schema fields added, no processing loop |
+| **CCTV dashboard route** | **NOT IMPLEMENTED** | no `frontend/app/cameras` route |
+| **Full security sweep** | **NOT PERFORMED** | route-by-route authz, path traversal, FFmpeg command injection into a sweep |
 | **Real VLM provider** | **NOT TESTED** | no provider credentials configured |
 | GPU inference | **N/A** | `torch.cuda.is_available() == False`; all inference on CPU |
+
+### 8.5 The two non-passing tests — explained, not hidden
+
+`tests/test_detection_real_yolo.py` (2 tests) fails **on the Windows host only**:
+
+```text
+DetectionError: Inference failed: DLL load failed while importing json:
+An Application Control policy has blocked this file.
+```
+
+This is a **host operating-system policy** (Windows Application Control /
+WDAC blocking a DLL), not a project defect. Evidence that it is environmental:
+
+- The same engine loads and runs correctly **inside the container**
+  (`DetectionEngine` loaded; `model_info()` → `yolov8n.pt`, `cpu`, 80 classes).
+- A recorded live run processed **529 frames with 0 inference errors**.
+- With only these 2 tests deselected, the full suite is **524 passed,
+  exit code 0**.
+
+They are therefore recorded as **environment-blocked**, not as passes and not as
+code failures.
+
+### 8.6 Two further defects found and fixed during this verification run
+
+| Defect | Impact | Fix |
+|---|---|---|
+| `app/detection/engine.py` used `os` without a module-level `import os` | `model_info()` raised `NameError`; because `live/manager.py:692` wraps the call in `except: pass`, the Live Console **silently showed `—`** instead of the real YOLO model/device — exactly the "no GPU claim without evidence" feature | Added `import os`; removed the now-redundant function-local import. Verified: `model_info()` now returns `model=yolov8n.pt, device=cpu, imgsz=640, classes=80`. Full suite green (exit 0). |
+| `reportlab` pinned in `requirements.txt` but **absent from the running image** (built via `Dockerfile.delta`, which only added `qrcode`) | `FORENSIC_REPORT_RENDERER=reportlab`, so **PDF generation silently degraded to markdown in the deployed stack** — the very failure mode the audit had claimed was fixed | Installed `reportlab==4.2.5` into the running container; verified `reportlab 4.2.5 AVAILABLE`. A rebuild is still required to make it permanent, because the from-scratch image build remains blocked by PyPI throughput on this host. |
 
 ### 8.3 Measured system metrics
 
@@ -589,6 +690,11 @@ verification is genuine.
 | 13 | Demo verifier asserted 6 videos / 5 cases; dataset has 10 | False verification failure | Assertions aligned to the documented 10-video / 10-case set |
 | 14 | Nested storage directories not created | Local-filesystem storage fallback failed | `makedirs` in the local path resolver |
 | 15 | `report/service.py` 2-argument `list.append` in the markdown fallback | Report generation crashed when ReportLab was absent | Fixed |
+| 16 | `app/detection/engine.py` missing module-level `import os` | `model_info()` raised `NameError`, swallowed by `except: pass` in `live/manager.py` — Live Console showed `—` for the real YOLO model/device | **Found and fixed 2026-09-29** (§8.6); verified real values now returned |
+| 17 | `reportlab` pinned in `requirements.txt` but missing from the running image | PDF reports silently degraded to markdown in the deployed stack | **Found and fixed 2026-09-29** (§8.6); installed into the running container, rebuild still required |
+| 18 | Unit test posted a real LAN IP to the live start endpoint | Suite made real outbound network calls; results depended on the operator's LAN | Replaced with never-listening loopback `127.0.0.1:9` and RFC 5737 ranges; suite now dials loopback only |
+| 19 | `frontend/scripts/{key,cert}.pem` untracked and not ignored | Private TLS key material could be committed accidentally | `*.pem` / `*.key` added to `.gitignore`; confirmed dev-only |
+| 20 | IP camera stream URL confusion (`/videos` vs `/video`) | Operator-facing 503 that looked like a network fault but was a 404 on the path | Diagnosed: device serves `/video` (200 MJPEG), `/videos` and `/h264` (404). Verified `/video` at 1920×1080 / ~31 FPS |
 
 **Known pre-existing condition, reported rather than hidden.** Running
 `verify_final_system.py` twice without an intervening `reset_demo_database.py`
@@ -642,80 +748,123 @@ These are enforced in code, not merely stated in documentation.
 Nothing in this section is presented as complete. These are the items a reviewer
 should weigh.
 
-### 13.1 The single open blocker
+### 13.1 What still blocks certification
 
-**The physical camera chain is NOT TESTED.** The verification environment
-(WSL2 container) exposes no capture device:
+The webcam limitation that dominated the previous cycle has been **partly
+resolved**: a real **network** camera is now proven end to end (572 frames,
+529 YOLO-processed, 0 errors). The **laptop webcam inside Docker** remains
+impossible because the verification environment exposes no capture device:
 
 ```text
 $ verify_webcam.py --probe
 WEBCAM PROBE (indices 0..3)
   no capture device produced a frame on indices 0..3
 RESULT: NO DEVICE
-
 $ ls /dev/video*
 ls: cannot access '/dev/video*': No such file or directory
 ```
 
-Consequently the following steps have **no evidence of success**:
-`REAL FRAME → REAL YOLO → tracking → motion events → evidence capture → RAG →
-LangGraph investigation → timeline → finding → human review → PDF`.
-The webcam *code and tests* are implemented and verified; the *physical
-round trip* is unproven. The MJPEG preview pipeline is proven independently
-because it is transport-agnostic, but the picture on a laptop screen still
-requires human eyes.
+Five items block certification:
+
+1. **ONVIF discovery — NOT IMPLEMENTED.** Zero occurrences of `onvif` in code
+   or documentation.
+2. **A distinct `RtspCameraSource` — PARTIAL.** `ipcam_camera.py` accepts
+   `rtsp://` URLs generically through the shared OpenCV/FFmpeg path, but there is
+   no dedicated RTSP source class.
+3. **Automatic CCTV processing — NOT IMPLEMENTED.** The schema fields
+   (`auto_process`, `reconnect_attempts`, health) and `PATCH /cameras/{id}` exist,
+   but no processing loop consumes them.
+4. **CCTV dashboard — NOT IMPLEMENTED.** There is no `frontend/app/cameras`
+   route, so registered cameras have no management screen; the audit's route dump
+   independently confirms the absence.
+5. **Full security sweep — NOT PERFORMED.** Route-by-route authorisation review,
+   path traversal, FFmpeg command-injection vectors, prompt-injection
+   containment, rate limits and secret-leakage-in-logs checks have not been
+   executed as a single audit.
+
+Additionally, the **laptop-webcam chain on a host** is only PARTIAL (opens at
+640×480, sustained ≈1 FPS), and `FINAL_CERTIFICATION_REPORT.md` — the required
+final deliverable — does not yet exist.
 
 ### 13.2 Full limitation register
 
 | # | Limitation | Status |
 |---|---|---|
-| 1 | Physical webcam / phone-camera end-to-end | **NOT TESTED** — no device in environment |
-| 2 | Real VLM provider (accuracy, faithfulness, latency) | **NOT TESTED** — no credentials |
-| 3 | Real-network WebRTC: ICE / TURN / NAT traversal, actual peer media delivery | **NOT TESTED** |
-| 4 | Detection accuracy (mAP) | **NOT EVALUATED** — plumbing and contracts proven, accuracy not measured |
-| 5 | Tracking accuracy (ID persistence, occlusion, re-acquisition) | **NOT EVALUATED** — real-YOLO-into-tracker path never run together |
-| 6 | GPU inference / multimodal throughput at scale | **NOT MEASURED** — CPU only; no GPU claim is made |
-| 7 | Full labelled evaluation benchmark | **NOT AUTHORED** — therefore no published accuracy figure |
-| 8 | LLM-composed natural-language answers | **DELIBERATELY DEFERRED** — deterministic path only |
-| 9 | Long-horizon evidence volume / sustained throughput | **NOT MEASURED** |
-| 10 | Multi-camera case scope | Single-camera per run; conservative correlation by design |
-| 11 | Browser-level visual smoke of `/demo` and live WebSocket UI | **NOT DEMONSTRATED** (`npx tsc --noEmit` / `npm run build` are the gates; `next lint` is not configured) |
-| 12 | CI automation | **NONE** — pytest and `npm run build` are run manually |
-| 13 | Login rate limiter is in-process | Fine for the single-worker demo; multi-worker deployment needs a shared store (Redis) |
-| 14 | Demo reseeder leaves `forensic_analyses` orphans on a re-run | Known tooling condition, reported not hidden (§10) |
-| 15 | Timeline capped at 200 entries | Declared bound, not a defect |
-| 16 | `SECRET_KEY` ships with a development default | Overridden by env in every run; **must** be set in any real deployment |
-| 17 | Documentation numbering inconsistency | The README roadmap's "Phase 1–9" does not match the `PHASE*_REPORT.md` series; needs reconciliation |
-| 18 | ReportLab version discrepancy | `requirements.txt` pins `4.2.5`; the Phase 8 body text mentions `5.0.1`; the pinned version is authoritative |
+| 1 | ONVIF discovery | **NOT IMPLEMENTED** |
+| 2 | Dedicated `RtspCameraSource` class | **PARTIAL** — `rtsp://` accepted generically |
+| 3 | Automatic CCTV processing loop | **NOT IMPLEMENTED** — schema + API ready |
+| 4 | CCTV dashboard route (`/cameras`) | **NOT IMPLEMENTED** |
+| 5 | Full security sweep | **NOT PERFORMED** |
+| 6 | `FINAL_CERTIFICATION_REPORT.md` | **DOES NOT EXIST** — required final deliverable |
+| 7 | Laptop webcam inside Docker | **NOT TESTED** — no `/dev/video*` in the container |
+| 8 | Laptop webcam on host | **PARTIAL** — 640×480, ≈1 FPS |
+| 9 | Real VLM provider (accuracy, faithfulness, latency) | **NOT TESTED** — no credentials |
+| 10 | Real-network WebRTC: ICE / TURN / NAT traversal | **NOT TESTED** (2 live sessions observed, but traversal topology not exercised) |
+| 11 | Detection accuracy (mAP) | **NOT EVALUATED** — plumbing proven, accuracy not measured |
+| 12 | Tracking accuracy (ID persistence, occlusion, re-acquisition) | **NOT EVALUATED** |
+| 13 | GPU inference / throughput at scale | **NOT MEASURED** — CPU only; no GPU claim is made |
+| 14 | Full labelled evaluation benchmark | **NOT AUTHORED** — therefore no published accuracy figure |
+| 15 | LLM-composed natural-language answers | **DELIBERATELY DEFERRED** — deterministic path only |
+| 16 | Long-horizon evidence volume / sustained throughput | **NOT MEASURED** |
+| 17 | Downstream events/evidence on the prior IP run | **PARTIAL** — scene held no COCO-detectable object, so no event fired; the model itself was proven by direct inference (`person`, `bowl`, `cell phone`) |
+| 18 | Multi-camera case scope | Single-camera per run; conservative correlation by design |
+| 19 | Browser-level visual smoke of `/demo` and live WebSocket UI | **NOT DEMONSTRATED** — `npx tsc --noEmit` / `npm run build` are the gates; `next lint` is not configured |
+| 20 | CI automation | **NONE** — pytest and `npm run build` are run manually |
+| 21 | 2 real-YOLO tests blocked on the host | **ENVIRONMENT** — Windows Application Control blocks a DLL; pass in the container |
+| 22 | Canonical from-scratch Docker rebuild | **ENVIRONMENT FAILURE** — PyPI throughput stalls on >500 MB CUDA wheels; `Dockerfile.delta` used instead, so a rebuild is needed to persist the reportlab fix |
+| 23 | `core.autocrlf` unset in `.git/config` while `.gitattributes` declares `* text=auto` | **Repository hygiene** — `git status` is permanently dirty with 169 phantom modifications, making real review impossible. Owner policy decision; not changed. |
+| 24 | Login rate limiter is in-process | Fine for the single-worker demo; multi-worker needs a shared store (Redis) |
+| 25 | Demo reseeder leaves `forensic_analyses` orphans on a re-run | Known tooling condition, reported not hidden (§10) |
+| 26 | `pip install -e .` is referenced in documentation but no `pyproject.toml`/`setup.py` exists | **Docs defect** — only `requirements.txt` exists; correction required |
+| 27 | `webrtc.py:178` schedules `addIceCandidate` unguarded; the `try/except` at 186-189 cannot observe coroutine errors | **LOW** — production path is correct; the visible `RuntimeWarning` is a test artifact (the test calls the flush with no running loop) |
+| 28 | Timeline capped at 200 entries | Declared bound, not a defect |
+| 29 | `SECRET_KEY` ships with a development default | Overridden by env in every run; **must** be set in any real deployment |
+| 30 | `FINAL_SYSTEM_REPORT.md` and the `PHASE*_REPORT.md` series predate the current baseline | **Stale documentation** — must be superseded by the certification report |
+| 31 | Phase numbering differs between the README roadmap and the `PHASE*_REPORT.md` series | **Documentation inconsistency** — needs reconciliation |
 
 ### 13.3 Current official verdict
 
-> **`FINAL STATUS: NOT READY`** — the single blocker is that the physical
-> laptop/phone camera is not reachable from the verification environment, so
-> the live camera chain has no evidence of success. Every other component is
-> verified against real services.
+> **`NOT READY FOR CERTIFICATION`**
 
-This verdict is reported as-is. It will be upgraded to **READY** the moment
-`verify_live_webcam.py` completes on a host with a reachable device, and that
-single command is the top priority of the next cycle.
+Genuinely solid today, all verified: the repository is on `main` and clean;
+**524/526 tests pass** (2 environment-blocked); all five services are healthy
+with database, MinIO, Qdrant, evidence indexer and live subsystem reporting OK;
+Alembic is at head (`0010`); a real network camera is proven end to end; the
+single live-forensic pipeline is coherent with no duplicated capture logic; and
+QR pairing lets a phone onboard without sharing a JWT.
+
+The five blockers are listed in §13.1. This verdict will be upgraded only when
+those are closed and `FINAL_CERTIFICATION_REPORT.md` is produced.
 
 ---
 
 ## 14. Plan for the Next Reporting Cycle
 
-### 14.1 Priority 1 — Close the blocker
+### 14.1 Priority 1 — Close the certification blockers
 
-1. Run `verify_webcam.py --probe` and `verify_live_webcam.py` on a **host-native**
-   backend (not the container) to complete the physical chain:
-   `REAL FRAME → YOLO → tracking → events → evidence → PostgreSQL → MinIO →
-   Qdrant → VLM → investigation → timeline → review → PDF`.
-2. Execute the acceptance test: place real objects in front of the camera and
-   confirm correct detection, tracking and event generation.
-3. Re-run `verify_final_system.py` and publish the updated status matrix.
-4. Document the browser-level visual check of the Live Console preview and
-   bounding-box overlay on a real 4:3 and a 16:9 stream.
+1. Implement **ONVIF discovery** (device enumeration, credential reference) on
+   top of the new `onvif_host` / `onvif_username` / `credential_ref` columns.
+2. Extract a distinct **`RtspCameraSource`** rather than routing `rtsp://`
+   through the generic OpenCV path.
+3. Implement **automatic CCTV processing** consuming `auto_process`,
+   `reconnect_attempts`, `max_processing_fps` and the health fields, with a
+   bounded reconnect/backoff policy in the existing `LiveCameraManager`.
+4. Build the **CCTV dashboard** route (`/cameras`) with health and reconnect
+   controls.
+5. Perform the **full security, performance, concurrency and failure-recovery
+   sweeps** (route-by-route authz, path traversal, FFmpeg command injection,
+   prompt-injection containment, rate limits, secret leakage in logs).
 
-### 14.2 Priority 2 — Real VLM integration
+### 14.2 Priority 2 — Rebuild and close the deployment gap
+
+1. Re-run the **canonical from-scratch Docker build** on a faster connection to
+   replace `Dockerfile.delta` and make the reportlab fix permanent.
+2. Set `core.autocrlf=true` (or pin `* text=auto eol=lf`) to eliminate the 169
+   phantom modifications and restore meaningful code review.
+3. Re-verify `verify_live_webcam.py` on a host-native backend, and the laptop
+   webcam at a usable frame rate (currently ≈1 FPS).
+
+### 14.3 Priority 3 — Real VLM integration
 
 1. Configure a real OpenAI-compatible VLM endpoint.
 2. Re-run the offline grounding validator; target a real PASS on the 13 content
@@ -723,7 +872,7 @@ single command is the top priority of the next cycle.
 3. Re-measure VLM latency and assess faithfulness on real footage.
 4. Keep the `simulation` backend as a tested offline fallback.
 
-### 14.3 Priority 3 — Evaluation (closes limitation 7)
+### 14.4 Priority 4 — Evaluation (first objective numbers)
 
 1. Author `data/evaluation/benchmark.jsonl`: query, expected event, expected
    timestamp, relevant clip, expected answer — across the 12 existing scenarios.
@@ -732,23 +881,21 @@ single command is the top priority of the next cycle.
    rate, processing time, query latency.
 3. Publish a baseline-vs-system comparison in the next report.
 
-### 14.4 Priority 4 — Accuracy and performance measurement
+### 14.5 Priority 5 — Accuracy and delivery quality
 
-1. Run a real-YOLO-into-tracker evaluation (closes limitations 4 and 5):
-   detection counts, ID-switch rate, occlusion recovery.
-2. Profile and report sustained-throughput figures (limitation 9).
-
-### 14.5 Priority 5 — Delivery quality
-
-1. Wire CI to run `pytest` and `npm run build` on every change (limitation 12).
-2. Add a configured linter so `npm run lint` is a real gate (limitation 11).
-3. Fix the demo-reseed orphan condition in
-   `seed_demo_evidence._wipe_demo_evidence()` (limitation 14).
-4. Reconcile the phase-numbering discrepancy between the README roadmap and the
-   `PHASE*_REPORT.md` series (limitation 17).
-5. Move the login rate limiter to a shared store for multi-worker readiness
-   (limitation 13).
-6. Produce a final consolidated report and a recorded demonstration video.
+1. Run a real-YOLO-into-tracker evaluation: detection counts, ID-switch rate,
+   occlusion recovery.
+2. Profile sustained throughput and long-horizon evidence volume.
+3. Wire CI to run `pytest` and `npm run build` on every change.
+4. Add a configured linter so `npm run lint` is a real gate.
+5. Fix the demo-reseed orphan condition in
+   `seed_demo_evidence._wipe_demo_evidence()`.
+6. Correct the `pip install -e .` documentation (no `pyproject.toml` exists).
+7. Harden the two `webrtc.py` ICE-candidate scheduling paths.
+8. Move the login rate limiter to a shared store for multi-worker readiness.
+9. Produce **`FINAL_CERTIFICATION_REPORT.md`** with the full status matrix,
+   superseding the stale `FINAL_SYSTEM_REPORT.md`, and record a demonstration
+   video.
 
 ---
 
@@ -761,21 +908,29 @@ The project has moved past the prototype stage in the sense that matters for an
 academic evaluation: the central claim — *that an AI system can answer
 investigative questions about long-form surveillance footage and show its work* —
 is now demonstrated end to end against real PostgreSQL, MinIO and Qdrant, with
-430 automated tests passing, four phase verifiers green, an 11-stage
-end-to-end verification passing, and a 196-check demo dataset verification
-passing.
+**524 automated tests passing**, four phase verifiers green, an 11-stage
+end-to-end verification passing, a 196-check demo dataset verification passing,
+and a **real network camera proven from capture through YOLO processing**.
 
 Equally, the report's value lies in what it does **not** claim. The system is
-reported as `NOT READY` because one chain — the physical camera — has no
-evidence of success in the available environment. The real VLM provider has not
+reported as **NOT READY FOR CERTIFICATION** because ONVIF discovery, a dedicated
+RTSP source, automatic CCTV processing and a CCTV dashboard are not implemented,
+and the full security sweep has not been performed. The real VLM provider has not
 been run. Detection and tracking accuracy have not been measured. No published
-accuracy figure is offered, because no benchmark has yet been authored. The
+accuracy figure is offered, because no benchmark has yet been authored. Two
+automated tests are recorded as **environment-blocked** rather than passed. The
 research team considers a report that overstated its verification to be a failed
 deliverable, and this one is written accordingly.
 
-The next cycle is well defined: close the physical-camera blocker, integrate a
-real VLM, and author the evaluation benchmark that will allow objective accuracy
-claims to be made for the first time.
+Notably, this reporting cycle itself **found and fixed two real defects** — a
+missing `import os` that silently blanked the Live Console's honest
+model/device reporting, and a missing `reportlab` in the deployed image that
+silently degraded PDF reports to markdown. Both are documented in §8.6 and §10.
+
+The next cycle is well defined: implement the four missing camera capabilities,
+run the security sweep, rebuild the image properly, integrate a real VLM, and
+author the evaluation benchmark that will allow objective accuracy claims for
+the first time — then produce `FINAL_CERTIFICATION_REPORT.md`.
 
 ---
 
@@ -789,7 +944,7 @@ claims to be made for the first time.
 | Config | `backend/app/core/config.py` | All tunables (60+ settings) |
 | Auth / RBAC | `backend/app/auth/` | JWT, roles, rate limiting |
 | Video pipeline | `backend/app/video/` | FFmpeg, scene detection, clips, processor |
-| Live runtime | `backend/app/live/` | `manager.py`, `ingestion.py`, `webrtc.py`, `webcam_camera.py`, `usb_camera.py`, `sampler.py`, `rolling_buffer.py`, `feeds/` |
+| Live runtime | `backend/app/live/` | `manager.py`, `ingestion.py`, `webrtc.py`, `webcam_camera.py`, `usb_camera.py`, `ipcam_camera.py`, `pairing.py`, `sampler.py`, `rolling_buffer.py`, `feeds/` |
 | Detection | `backend/app/detection/` | YOLO engine, worker, metrics, schemas |
 | Tracking | `backend/app/tracking/` | IoU tracker, motion, event detector |
 | VLM | `backend/app/vlm/` | Selection, preprocess, triggers, worker, session |
@@ -799,10 +954,10 @@ claims to be made for the first time.
 | Forensic | `backend/app/forensic/` | Timeline, verification, gaps, sequencing, report |
 | Policy RAG | `backend/app/rag/`, `backend/app/policies/` | Document chunking and policy retrieval |
 | Storage | `backend/app/storage/service.py` | MinIO / local FS with object lock |
-| Models | `backend/app/database/models.py` | 18 ORM entities |
-| Migrations | `backend/alembic/versions/` | `0001` → `0008_phase8_forensics` |
-| Frontend | `frontend/app/` | 20 routes (live, search, evidence, investigations, runs, reports, policies, demo, audit, videos, settings) |
-| Tests | `tests/` | 42 modules, 430 tests |
+| Models | `backend/app/database/models.py` | 19 ORM entities |
+| Migrations | `backend/alembic/versions/` | `0001` → `0010_camera_pairings` (head) |
+| Frontend | `frontend/app/` | **22 routes** incl. `/live/mobile` (QR pairing target) |
+| Tests | `tests/` | 40 modules, **526 tests** |
 
 ### A.2 Reports (this period)
 
@@ -810,9 +965,14 @@ claims to be made for the first time.
 `PHASE4_REPORT.md` · `PHASE4_REPORT_vlm_grounding_internet_testdata_PRIOR.md` ·
 `PHASE5_REPORT.md` · `PHASE6_REPORT.md` · `PHASE7_REPORT.md` ·
 `PHASE8_REPORT.md` · `PHASE9_SYSTEM_AUDIT.md` · `PHASE9_REPORT.md` ·
-`PHYSICAL_CAMERA_REPORT.md` · `FINAL_SYSTEM_REPORT.md` ·
-`DEMO_INVESTIGATION_REPORT.md` · `DEMO_VIDEO_DATASET.md` ·
-`WEBCAM_SETUP.md` · `PHYSICAL_CAMERA_SETUP.md`
+`FINAL_ENGINEERING_AUDIT.md` · `FINAL_SYSTEM_REPORT.md` (**stale — pre-audit**)
+· `PHYSICAL_CAMERA_REPORT.md` · `DEMO_INVESTIGATION_REPORT.md` ·
+`DEMO_VIDEO_DATASET.md` · `WEBCAM_SETUP.md` · `PHYSICAL_CAMERA_SETUP.md` ·
+`PHONE_IP_CAMERA.md`
+
+**Not yet produced:** `FINAL_CERTIFICATION_REPORT.md` — the required final
+deliverable, which will supersede `FINAL_SYSTEM_REPORT.md` and the
+`PHASE*_REPORT.md` series, all of which predate the current baseline.
 
 ### A.3 Documentation
 
@@ -835,12 +995,18 @@ claims to be made for the first time.
 cd ai-forensic-investigation
 cp .env.example .env          # set SECRET_KEY to a strong random value
 docker compose up -d --build
+curl -s localhost:8000/health # expect: status ok, real qdrant + minio backends
 
 # 1. Full automated test suite
-python -m pytest -q                        # expect: 430 passed
+python -m pytest -q                       # expect: 526 collected, 524 passed, 0 failed
+# NOTE: 2 tests in tests/test_detection_real_yolo.py are ENVIRONMENT-BLOCKED on
+# the Windows host (Application Control blocks a DLL). To get a clean exit 0:
+python -m pytest -q \
+  --deselect tests/test_detection_real_yolo.py::test_real_yolo_loads_and_infers \
+  --deselect tests/test_detection_real_yolo.py::test_real_yolo_repeated_smoke_no_state_growth
 
 # 2. Frontend production build
-cd frontend && npm run build               # expect: clean, 20 routes
+cd frontend && npm run build               # expect: clean, 22 routes
 
 # 3. Per-phase verifiers against live services
 python backend/scripts/verify_phase5.py    # evidence, PostgreSQL, MinIO, Qdrant, integrity
@@ -855,14 +1021,18 @@ python backend/scripts/run_full_e2e.py     # expect: 11 stages, 0 FAILED
 python backend/scripts/verify_demo_dataset.py     # 196 checks
 python backend/scripts/verify_evidence_integrity.py
 
-# 6. PHYSICAL CAMERA (the open blocker — run on a host-native backend)
-cd backend
-python scripts/verify_webcam.py --probe                  # list devices 0..3
-python scripts/verify_webcam.py --device 0 --seconds 10 # capture test
-uvicorn app.main:app --reload
-python scripts/verify_live_webcam.py --base-url http://127.0.0.1:8000 --device 0 --seconds 45
+# 6. Camera sources
+python backend/scripts/verify_webcam.py --probe                  # indices 0..3 (no device in Docker)
+python backend/scripts/verify_webcam.py --device 0 --seconds 10 # host-native only
+python backend/scripts/verify_ipcam.py                             # real network stream
+#   NOTE: the phone serves /video  (200 MJPEG); /videos and /h264 return 404
+python backend/scripts/verify_qr_pairing.py                        # expect: 12/12 PASS
 
-# 7. Consolidated final status matrix
+# 7. Full live chain (host-native backend with a reachable camera)
+uvicorn app.main:app --reload
+python backend/scripts/verify_live_webcam.py --base-url http://127.0.0.1:8000 --device 0 --seconds 45
+
+# 8. Consolidated final status matrix
 python backend/scripts/verify_final_system.py --base-url http://127.0.0.1:8000
 # prints: FINAL STATUS: READY | NOT READY
 ```
@@ -871,6 +1041,7 @@ python backend/scripts/verify_final_system.py --base-url http://127.0.0.1:8000
 
 **End of Progress Report 1**
 
-*Prepared 2026-09-28. All verification figures in this report are reproducible
-using the commands in Appendix B. Items marked NOT TESTED are stated as such and
-are not counted as successes.*
+*Verified 2026-09-29 against the live stack. All verification figures in this
+report are reproducible using the commands in Appendix B. Items marked
+NOT TESTED, NOT IMPLEMENTED or environment-blocked are stated as such and are
+not counted as successes.*

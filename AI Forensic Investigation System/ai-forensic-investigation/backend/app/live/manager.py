@@ -12,7 +12,7 @@ import threading
 import time
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
 
@@ -23,6 +23,11 @@ from app.live.ingestion import FrameIngestion
 from app.live.source import LiveCameraSource
 
 logger = logging.getLogger(__name__)
+
+# How long a ``GET /frame`` poller keeps preview encoding alive after its last
+# request. Must exceed the frontend poll interval with margin, and must be short
+# enough that an abandoned tab stops the encoder promptly.
+_FRAME_POLL_GRACE_SECONDS = 2.0
 
 
 class _Subscriber:
@@ -134,6 +139,11 @@ class LiveSessionRuntime:
         self._tracking_subscribers: List[_Subscriber] = []
         self._tracking_frame_seq = 0
         self._preview_subscribers: List[_Subscriber] = []
+        self._latest_preview: Optional[bytes] = None
+        self._latest_preview_seq = 0
+        self._preview_seq = 0
+        self._latest_preview_ts = 0.0
+        self._frame_poll_deadline = 0.0
         self.vlm_session = None
         self.vlm_error: Optional[str] = None
         self._vlm_subscribers: List[_Subscriber] = []
@@ -581,6 +591,7 @@ class LiveSessionRuntime:
                 self._bump_frame_counters()
                 jpeg = self._encode_preview(frame)
                 if jpeg is not None:
+                    self._store_latest_preview(jpeg)
                     self.publish_preview(jpeg)
             return accepted
 
@@ -801,11 +812,12 @@ class LiveSessionRuntime:
     def _encode_preview(self, frame) -> Optional[bytes]:
         """JPEG-encode a frame for the browser preview.
 
-        Only runs when a preview subscriber exists, so a WebRTC session (which
-        already delivers video natively) never pays for the encode.
+        Runs only when a preview consumer exists (an MJPEG subscriber, or a
+        client polling ``GET /live/cameras/{id}/frame``), so a WebRTC session -
+        which already delivers video natively - never pays for the encode.
         """
         with self._lock:
-            wanted = bool(self._preview_subscribers)
+            wanted = bool(self._preview_subscribers) or time.monotonic() < self._frame_poll_deadline
         if not wanted or frame is None:
             return None
         try:
@@ -822,6 +834,37 @@ class LiveSessionRuntime:
         except Exception as exc:  # noqa: BLE001 - preview must never break ingest
             logger.debug("Preview encode failed (camera=%s): %s", self.camera_id, exc)
             return None
+
+    # ------------------------------------------------- latest-frame snapshot
+
+    def note_frame_poll(self) -> None:
+        """Mark a ``GET /frame`` poller as active for a short grace period.
+
+        Without this the encode is skipped (nobody is subscribed to MJPEG), so
+        a client that polls only ``/frame`` would never receive a frame.
+        """
+        with self._lock:
+            self._frame_poll_deadline = time.monotonic() + _FRAME_POLL_GRACE_SECONDS
+
+    def _store_latest_preview(self, jpeg: bytes) -> None:
+        """Cache the encoded frame for ``GET /frame`` consumers."""
+        with self._lock:
+            self._preview_seq += 1
+            self._latest_preview = jpeg
+            self._latest_preview_seq = self._preview_seq
+            self._latest_preview_ts = time.time()
+
+    def latest_preview(self) -> Optional[Tuple[bytes, int, float]]:
+        """Return ``(jpeg, sequence, epoch)`` for the most recent encoded frame.
+
+        ``None`` means no frame has been encoded yet, so the caller should
+        report "not ready" rather than inventing a placeholder image.
+        """
+        self.note_frame_poll()
+        with self._lock:
+            if self._latest_preview is None:
+                return None
+            return (self._latest_preview, self._latest_preview_seq, self._latest_preview_ts)
 
 
 class ActiveSessionError(RuntimeError):

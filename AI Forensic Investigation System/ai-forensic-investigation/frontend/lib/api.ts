@@ -1424,6 +1424,37 @@ export const api = {
       body: JSON.stringify({ trigger: "manual" }),
     }),
 
+  // ---- QR device pairing ----
+
+  livePairCamera: (cameraId: number) =>
+    request<{
+      pairing_id: string;
+      camera_id: number;
+      expires_at: string;
+      url: string;
+      qr_url: string;
+    }>(`/live/cameras/${cameraId}/pair`, {
+      method: "POST",
+    }),
+  livePairQrBlobUrl: async (cameraId: number, pairingId: string): Promise<string> => {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/live/cameras/${cameraId}/pair/qr.png?pairing_id=${encodeURIComponent(pairingId)}`, { headers });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, detail);
+    }
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
+
   // ---- Phase 5: Live forensic evidence ----
 
   liveEvidenceList: (params?: {

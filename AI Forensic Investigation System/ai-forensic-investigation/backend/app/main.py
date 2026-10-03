@@ -28,7 +28,20 @@ async def lifespan(app: FastAPI):
         logger.info("MinIO buckets ensured")
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not ensure MinIO buckets at startup: %s", exc)
+    # CCTV auto-processing supervisor: inert unless LIVE_AUTO_PROCESS_ENABLED.
+    try:
+        from app.live.auto_process import start_supervisor_if_enabled
+
+        start_supervisor_if_enabled()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not start auto-process supervisor: %s", exc)
     yield
+    try:
+        from app.live.auto_process import stop_supervisor
+
+        stop_supervisor()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not stop auto-process supervisor cleanly: %s", exc)
 
 
 app = FastAPI(title="AI Forensic Investigation System", version="1.0.0", lifespan=lifespan)

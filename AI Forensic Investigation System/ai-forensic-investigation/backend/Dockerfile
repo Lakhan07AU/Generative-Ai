@@ -13,7 +13,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Retry flags keep the build durable on slow/flaky PyPI connections (the
+# heavy CUDA/torch wheels frequently exceed pip's default 15s read timeout).
+RUN pip install --no-cache-dir --timeout 120 --retries 8 -r requirements.txt
 
 COPY . .
 
