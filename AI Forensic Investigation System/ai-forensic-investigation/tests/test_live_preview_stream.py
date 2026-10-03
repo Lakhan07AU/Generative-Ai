@@ -228,3 +228,109 @@ def test_webrtc_session_is_not_served_as_mjpeg(client, auth_headers, live_camera
     finally:
         manager.stop(live_camera)
 
+
+# ------------------------------------------------------------ /frame snapshot
+
+
+def test_latest_preview_stores_and_increments_sequence():
+    """Ingesting a frame caches a JPEG; each store bumps the preview sequence."""
+    rt = _runtime(9301)
+    rt.note_frame_poll()  # a polling client has asked for frames
+    rt.ingest_frame(np.full((40, 60, 3), 100, dtype=np.uint8), time.time())
+    snap = rt.latest_preview()
+    assert snap is not None
+    jpeg, seq, epoch = snap
+    assert jpeg[:2] == b"\xff\xd8" and jpeg[-2:] == b"\xff\xd9"
+    assert seq == rt._preview_seq
+    assert seq > 0
+    assert epoch > 0
+    rt.ingest_frame(np.full((40, 60, 3), 120, dtype=np.uint8), time.time())
+    snap2 = rt.latest_preview()
+    assert snap2 is not None
+    assert snap2[1] > seq, "a newer ingest must produce a newer snapshot"
+
+
+def test_latest_preview_without_frames_is_none():
+    """No encodable frame yet must return None - never a placeholder."""
+    rt = _runtime(9302)
+    assert rt.latest_preview() is None
+
+
+def test_frame_poll_keeps_encoding_alive_without_mjpeg_subscribers():
+    """note_frame_poll must turn the encoder on even with zero subscribers."""
+    import io
+
+    import cv2
+
+    rt = _runtime(9303)
+    rt.note_frame_poll()
+    rt.ingest_frame(np.full((40, 60, 3), 90, dtype=np.uint8), time.time())
+    snap = rt.latest_preview()
+    assert snap is not None
+    decoded = cv2.imdecode(np.frombuffer(snap[0], dtype=np.uint8), cv2.IMREAD_COLOR)
+    assert decoded is not None
+    # cv2.imwrite of the cached JPEG must round-trip (sanity for the encoder)
+    buf = io.BytesIO()
+    assert cv2.imencode(".jpg", decoded, [] )[0]
+    buf.close()
+
+
+def test_frame_endpoint_requires_authentication(client):
+    res = client.get("/live/cameras/1/frame")
+    assert res.status_code == 401
+
+
+def test_frame_endpoint_rejects_an_invalid_token(client):
+    res = client.get("/live/cameras/1/frame", params={"token": "not-a-real-token"})
+    assert res.status_code == 401
+
+
+def test_frame_endpoint_requires_an_active_session(client, auth_headers, live_camera):
+    token = auth_headers["Authorization"].split()[1]
+    res = client.get(f"/live/cameras/{live_camera}/frame", params={"token": token})
+    assert res.status_code == 409
+    assert "active live session" in res.json()["detail"]
+
+
+def test_frame_endpoint_requires_live_roles(client, reviewer_headers):
+    token = reviewer_headers["Authorization"].split()[1]
+    res = client.get("/live/cameras/1/frame", params={"token": token})
+    assert res.status_code == 403
+
+
+def test_frame_endpoint_serves_the_latest_frame(client, auth_headers, monkeypatch):
+    """The endpoint returns the JPEG the detector saw, with sequence headers.
+
+    Mirrors the real poller: the first GET has no frame yet (204) but arms the
+    encoder; the next GET, after a frame is ingested, returns the JPEG.
+    """
+    import cv2
+
+    from app.live.manager import manager, SessionStatus
+
+    token = auth_headers["Authorization"].split()[1]
+    rt = manager.start(
+        camera_id=9901,
+        camera_name="frame-test",
+        started_by_user_id=None,
+        transport="file",
+        fps_target=10,
+    )
+    try:
+        rt._set_status(SessionStatus.LIVE)
+        # Poller starts: nothing encodable yet -> 204 and encoder armed.
+        res = client.get(f"/live/cameras/9901/frame", params={"token": token})
+        assert res.status_code == 204
+        rt.ingest_frame(np.full((40, 60, 3), 55, dtype=np.uint8), time.time())
+        res = client.get(f"/live/cameras/9901/frame", params={"token": token})
+        assert res.status_code == 200
+        assert res.headers["content-type"] == "image/jpeg"
+        assert int(res.headers["x-frame-sequence"]) > 0
+        float(res.headers["x-frame-timestamp"])
+        jpeg = res.content
+        assert jpeg[:2] == b"\xff\xd8" and jpeg[-2:] == b"\xff\xd9"
+        decoded = cv2.imdecode(np.frombuffer(jpeg, dtype=np.uint8), cv2.IMREAD_COLOR)
+        assert decoded is not None and decoded.shape[0] == 40
+    finally:
+        manager.stop(9901)
+

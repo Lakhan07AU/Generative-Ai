@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.database.models import Camera, User
-from app.schemas.video import CameraCreate, CameraOut
+from app.schemas.video import CameraCreate, CameraOut, CameraUpdate
 from app.auth.deps import get_current_user, require_roles
 from app.audit.service import record_audit
 
@@ -30,12 +30,38 @@ def create_camera(
         description=payload.description,
         camera_type=payload.camera_type or "CCTV",
         stream_source=payload.stream_source,
+        auto_process=payload.auto_process or False,
+        onvif_host=payload.onvif_host,
+        onvif_username=payload.onvif_username,
+        rtsp_url=payload.rtsp_url,
+        rtsp_url_alt=payload.rtsp_url_alt,
+        max_processing_fps=payload.max_processing_fps,
         created_by_user_id=current_user.id,
     )
     db.add(camera)
     db.commit()
     db.refresh(camera)
     record_audit(db, "camera_create", user_id=current_user.id, entity_type="camera", entity_id=camera.id)
+    return camera
+
+
+@router.patch("/{camera_id}", response_model=CameraOut)
+def update_camera(
+    camera_id: int,
+    payload: CameraUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles("ADMIN", "SECURITY_OFFICER", "INVESTIGATOR")),
+):
+    camera = db.query(Camera).filter(Camera.id == camera_id).first()
+    if not camera:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    changes = payload.model_dump(exclude_unset=True)
+    for field, value in changes.items():
+        if hasattr(camera, field):
+            setattr(camera, field, value)
+    db.commit()
+    db.refresh(camera)
+    record_audit(db, "camera_update", user_id=current_user.id, entity_type="camera", entity_id=camera.id)
     return camera
 
 

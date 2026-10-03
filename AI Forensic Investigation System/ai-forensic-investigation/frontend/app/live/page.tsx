@@ -16,6 +16,8 @@ import {
   Search,
   Image as ImageIcon,
   Fingerprint,
+  QrCode,
+  X,
 } from "lucide-react";
 import {
   api,
@@ -263,6 +265,7 @@ export default function LivePage() {
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [liveList, setLiveList] = useState<LiveStatus[]>([]);
   const [streaming, setStreaming] = useState(false);
+  const [previewFrameUrl, setPreviewFrameUrl] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [facing, setFacing] = useState<"user" | "environment">("environment");
   const [error, setError] = useState("");
@@ -295,6 +298,12 @@ export default function LivePage() {
   const [newName, setNewName] = useState("");
   const [newLocation, setNewLocation] = useState("");
   const [newType, setNewType] = useState("MOBILE");
+
+  // QR device pairing
+  const [pairingInfo, setPairingInfo] = useState<{ pairing_id: string; camera_id: number; expires_at: string; url: string } | null>(null);
+  const [pairingQrUrl, setPairingQrUrl] = useState<string | null>(null);
+  const [pairingLoading, setPairingLoading] = useState(false);
+  const [pairingError, setPairingError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -387,6 +396,58 @@ export default function LivePage() {
     }
   };
 
+  // ----------------------------------------------------------- frame polling
+  // For backend-owned captures (webcam / droidcam_usb / file / simulation) the
+  // browser has no MediaStream, so we poll the latest encoded JPEG at ~4.5 FPS
+  // instead of keeping an MJPEG connection. Each 200 swaps to a fresh object
+  // URL and revokes the previous one; a 204 keeps the last frame on screen.
+  const framePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const previewInFlightRef = useRef(false);
+  const previewFrameUrlRef = useRef<string | null>(null);
+
+  const stopFramePolling = useCallback(() => {
+    if (framePollRef.current !== null) {
+      clearInterval(framePollRef.current);
+      framePollRef.current = null;
+    }
+    previewInFlightRef.current = false;
+    if (previewFrameUrlRef.current) {
+      URL.revokeObjectURL(previewFrameUrlRef.current);
+      previewFrameUrlRef.current = null;
+      setPreviewFrameUrl(null);
+    }
+  }, []);
+
+  const startFramePolling = useCallback(
+    (cameraId: number) => {
+      stopFramePolling();
+      const token = getToken() ?? "";
+      const poll = async () => {
+        if (previewInFlightRef.current) return;
+        previewInFlightRef.current = true;
+        try {
+          const res = await fetch(
+            `${API_URL}/live/cameras/${cameraId}/frame?token=${encodeURIComponent(token)}`,
+            { cache: "no-store" },
+          );
+          if (res.status !== 200) return; // 204 pre-frame / 401 / 409 / 5xx: keep last frame
+          const blob = await res.blob();
+          if (previewFrameUrlRef.current) URL.revokeObjectURL(previewFrameUrlRef.current);
+          const url = URL.createObjectURL(blob);
+          previewFrameUrlRef.current = url;
+          setPreviewFrameUrl(url);
+        } catch {
+          /* transient network errors keep the previous frame visible */
+        } finally {
+          previewInFlightRef.current = false;
+        }
+      };
+      void poll();
+      framePollRef.current = setInterval(poll, 220);
+    },
+    [setPreviewFrameUrl, stopFramePolling],
+  );
+
   useEffect(() => {
     loadCameras();
     loadLiveList();
@@ -414,6 +475,18 @@ export default function LivePage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCameraId]);
+
+  // Poll the latest-frame JPEG while streaming from a backend-owned source.
+  // WebRTC keeps the native <video>, so polling only applies to the others.
+  useEffect(() => {
+    if (streaming && transport !== "webrtc" && selectedCameraId) {
+      startFramePolling(Number(selectedCameraId));
+    } else {
+      stopFramePolling();
+    }
+    return stopFramePolling;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaming, transport, selectedCameraId, startFramePolling, stopFramePolling]);
 
   // ------------------------------------------------------------- connections
 
@@ -627,6 +700,7 @@ export default function LivePage() {
 
   const closeConnections = useCallback(() => {
     closingRef.current = true;
+    stopFramePolling();
     closeSignalingWs();
     closeStatusWs();
     closeDetectionWs();
@@ -652,7 +726,7 @@ export default function LivePage() {
     stopTracks();
     setStreaming(false);
     setPcState("");
-  }, [closeSignalingWs, closeStatusWs, closeDetectionWs, closeTrackingWs, closeVlmWs, stopTracks]);
+  }, [closeSignalingWs, closeStatusWs, closeDetectionWs, closeTrackingWs, closeVlmWs, stopFramePolling, stopTracks]);
 
   // -------------------------------------------------------------- webrtc flow
 
@@ -886,15 +960,40 @@ export default function LivePage() {
   const selectedCamera = cameras.find((c) => c.id === Number(selectedCameraId));
   const liveNow = liveList.find((s) => s.camera_id === Number(selectedCameraId));
 
+  async function onCreatePairing() {
+    if (!selectedCameraId) return;
+    setPairingLoading(true);
+    setPairingError(null);
+    setPairingInfo(null);
+    setPairingQrUrl(null);
+    try {
+      const p = await api.livePairCamera(Number(selectedCameraId));
+      setPairingInfo(p);
+      try {
+        const url = await api.livePairQrBlobUrl(p.camera_id, p.pairing_id);
+        setPairingQrUrl(url);
+      } catch (qrErr) {
+        setPairingError(
+          `Pairing created but the QR image could not be loaded: ${qrErr instanceof ApiError ? qrErr.message : String(qrErr)}`
+        );
+      }
+    } catch (e) {
+      setPairingError(e instanceof ApiError ? e.message : "Pairing request failed");
+    } finally {
+      setPairingLoading(false);
+    }
+  }
+
+  function onClosePairing() {
+    setPairingInfo(null);
+    setPairingQrUrl(null);
+    setPairingError(null);
+  }
+
   // Backend-owned captures (webcam / droidcam_usb / file / simulation) have no
-  // MediaStream in the browser, so the console subscribes to the MJPEG preview
-  // of the very frames that are being analysed. WebRTC keeps the native <video>.
-  const previewUrl =
-    streaming && transport !== "webrtc" && selectedCameraId
-      ? `${API_URL}/live/cameras/${selectedCameraId}/stream.mjpg?token=${encodeURIComponent(
-          getToken() ?? "",
-        )}`
-      : null;
+  // MediaStream in the browser, so the console polls the latest encoded JPEG at
+  // ~4.5 FPS (see startFramePolling) instead of keeping an MJPEG connection open.
+  // WebRTC keeps the native <video>.
 
   return (
     <ProtectedShell>
@@ -1066,6 +1165,15 @@ export default function LivePage() {
                   {facing === "environment" ? "Front camera (selfie)" : "Rear camera"}
                 </Button>
               )}
+              <Button
+                variant="outline"
+                className="w-full"
+                disabled={!selectedCameraId || pairingLoading}
+                onClick={() => void onCreatePairing()}
+              >
+                {pairingLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                Pair a device
+              </Button>
             </CardContent>
           </Card>
 
@@ -1123,12 +1231,12 @@ export default function LivePage() {
                     ) : (
                       /* The backend owns the camera for webcam / droidcam_usb /
                          file / simulation, so the browser has no MediaStream.
-                         Stream the exact frames that YOLO analysed, otherwise
+                         Show the exact frames that YOLO analysed, otherwise
                          the surface stays black. */
-                      previewUrl ? (
+                      previewFrameUrl ? (
                         <img
-                          key={previewUrl}
-                          src={previewUrl}
+                          key={previewFrameUrl}
+                          src={previewFrameUrl}
                           alt="Live camera preview"
                           className="h-full w-full object-contain"
                         />
@@ -1528,6 +1636,55 @@ export default function LivePage() {
           </Card>
         </div>
       </div>
+
+      {pairingInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 p-4" onClick={onClosePairing}>
+          <div
+            className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-navy">Pair a device</h2>
+                <p className="text-xs text-slate-500">
+                  Scan with the phone that will be this camera. The code is single-use.
+                </p>
+              </div>
+              <button
+                onClick={onClosePairing}
+                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {pairingError ? (
+              <p className="rounded-md bg-red-50 p-3 text-sm text-red-700">{pairingError}</p>
+            ) : pairingQrUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={pairingQrUrl} alt="Pairing QR code" className="mx-auto h-56 w-56 rounded-lg border border-slate-200" />
+                <p className="mt-3 break-all rounded-md bg-slate-50 p-2 text-center text-xs text-slate-600">
+                  {pairingInfo.url}
+                </p>
+                <p className="mt-3 text-center text-xs text-slate-500">
+                  Expires at{" "}
+                  {new Date(pairingInfo.expires_at).toLocaleTimeString(undefined, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}
+                  . Scan afterwards and the phone streams as camera {pairingInfo.camera_id} over WebRTC.
+                </p>
+              </>
+            ) : (
+              <div className="flex items-center justify-center gap-2 py-10 text-slate-400">
+                <Loader2 className="h-6 w-6 animate-spin" /> Loading QR…
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </ProtectedShell>
   );
 }

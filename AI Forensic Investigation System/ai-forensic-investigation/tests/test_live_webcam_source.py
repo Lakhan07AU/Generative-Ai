@@ -20,6 +20,10 @@ from app.live.source import CameraSource
 from app.live.usb_camera import UsbCameraSource
 from app.live.webcam_camera import LocalOpenCVCameraSource, WebcamCameraSource
 
+# Loopback port 9 (discard) is never listening, so opening it is refused
+# immediately by the OS. Keeps the suite hermetic and offline.
+UNREACHABLE_LOOPBACK_URL = "http://127.0.0.1:9/video"
+
 
 class FakeRuntime:
     """Minimal stand-in for the live session runtime."""
@@ -452,7 +456,12 @@ def test_api_still_accepts_droidcam_usb_transport(client, auth_headers):
 
 
 def test_api_accepts_ipcam_transport_with_stream_url(client, auth_headers):
-    """POST /live/cameras/{id}/start accepts transport="ipcam" + stream_url."""
+    """POST /live/cameras/{id}/start accepts transport="ipcam" + stream_url.
+
+    The URL points at a loopback port that is guaranteed closed, so this test
+    never touches a real network device and never depends on a phone being on.
+    An unreachable stream must fail loudly (503), never fake a session.
+    """
     cam = client.post("/cameras", headers=auth_headers,
                       json={"camera_name": "IPCam wiring", "location": "lab",
                             "camera_type": "OTHER"})
@@ -461,14 +470,10 @@ def test_api_accepts_ipcam_transport_with_stream_url(client, auth_headers):
 
     resp = client.post(f"/live/cameras/{camera_id}/start", headers=auth_headers,
                        json={"transport": "ipcam",
-                             "stream_url": "http://10.5.176.115:8080/video",
+                             "stream_url": UNREACHABLE_LOOPBACK_URL,
                              "fps_target": 10})
-    # An unreachable phone must fail loudly (503), never fake a session.
-    assert resp.status_code in (200, 201, 503), resp.text
-    if resp.status_code == 503:
-        assert "unavailable" in resp.json()["detail"].lower()
-    else:
-        client.post(f"/live/cameras/{camera_id}/stop", headers=auth_headers)
+    assert resp.status_code == 503, resp.text
+    assert "unavailable" in resp.json()["detail"].lower()
 
 
 def test_api_rejects_ipcam_without_stream_url(client, auth_headers, monkeypatch):

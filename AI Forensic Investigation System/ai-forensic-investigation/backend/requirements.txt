@@ -35,10 +35,17 @@ scenedetect[opencv]==0.6.4
 
 # Computer vision (YOLO)
 ultralytics==8.2.57
+# Pin the exact torch/torchvision the image resolves to (CPU inference only;
+# prevents pip drift to newer default-index wheels).
+torch==2.14.0
+torchvision==0.29.0
 
 # Phase 1 - Real-time mobile camera (WebRTC receive/ingest)
 aiortc==1.15.0
 av==17.1.0
+
+# QR camera pairing (pure-Python encoder; Pillow renders the PNG)
+qrcode==8.2
 
 # Object tracking (ByteTrack + BoT-SORT-compatible via BoxMOT/scikit)
 # We implement a lightweight tracker ourselves for portability; these are

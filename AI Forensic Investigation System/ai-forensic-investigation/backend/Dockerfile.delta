@@ -1,0 +1,22 @@
+# Thin delta image: rebuilds the validated forensic-backend image with the
+# current committed source + qrcode, WITHOUT re-downloading the heavy
+# torch/CUDA wheels from PyPI (which stall on this build host).
+#
+# The canonical build (Dockerfile) is the source of truth and is kept in
+# sync (requirements.txt + this layer set). This variant exists because a
+# from-scratch `pip install -r requirements.txt` repeatedly hits PyPI read
+# timeouts on >500 MB wheels here; the base image already contains the exact
+# pinned torch==2.14.0 / torchvision==0.29.0 and every other dependency.
+#
+# Build:  docker build -f Dockerfile.delta -t forensic-backend:latest .
+FROM forensic-backend:latest
+
+# Delta dependency: QR PNG rendering for camera pairing.
+RUN pip install --no-cache-dir --timeout 120 --retries 8 qrcode==8.2
+
+# Current committed source (new endpoints, pairing service, camera models,
+# migrations, verification scripts).
+COPY alembic.ini alembic.ini
+COPY alembic alembic
+COPY app app
+COPY scripts scripts
