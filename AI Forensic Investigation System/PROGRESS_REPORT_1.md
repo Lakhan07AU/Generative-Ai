@@ -15,7 +15,7 @@
 | **Department** | _[Department, Institution]_ |
 | **Repository** | `AI Forensic Investigation System/ai-forensic-investigation` |
 | **Version control** | branch `main`, HEAD `413dab6d`, working tree clean (0 real content changes) |
-| **Overall status** | **Core pipeline COMPLETE and VERIFIED — NOT READY FOR CERTIFICATION (5 open items, §13)** |
+| **Overall status** | **Core pipeline COMPLETE and VERIFIED — NOT READY FOR CERTIFICATION (4 open items, §13)** |
 
 > **Note on honesty of this report.** Every status in this document is either
 > **PASS** (executed against real services and recorded with evidence) or
@@ -87,18 +87,23 @@ Live / uploaded CCTV  (WebRTC phone · IP camera · laptop webcam · USB · file
 | Test modules | 40 files under `tests/` |
 | Alembic migrations | **10** (`0001_initial` → `0010_camera_pairings`, head applied) |
 | Frontend routes | **22** (Next.js 14.2.5 production build clean, incl. new `/live/mobile`) |
-| End-to-end verifier | 11 stages, 0 failed |
-| Phase verifiers | Phase 5 **PASS**, Phase 6 **PASS (103 checks)**, Phase 7 **PASS (38 checks)**, Phase 8 **PASS (46 checks)** |
+| End-to-end verifier | **11 stages, 0 failed, 0 warnings** (clean_start correctly SKIPPED — no `--reset-db`) |
+| Phase verifiers | Phase 5 **PASS**, Phase 6 **PASS**, Phase 7 **PASS**, Phase 8 **PASS** |
+| Consolidated matrix | Phases 5/6/7/8 **PASS**; WEBCAM **ENVIRONMENT FAILURE** → `FINAL STATUS: NOT READY` |
 | Demo dataset verifier | **196 checks, 0 failures**, 7/7 sections |
-| Evidence indexed (live `/health`) | **1464 indexed, 0 failed, 0 dropped, 0 errors** |
-| Live sessions (live `/health`) | 2 active WebRTC sessions (cameras 8, 9) |
+| Evidence integrity | **CLEAN — 0 problems** (28199 evidence rows, all `INDEXED`, 0 failed) — fixed from 56 orphaned refs, see §8.6 |
+| Real vector backend | **PASS** — `backend=qdrant`, dims 384, insert/search/metadata-filter/negative-filter/delete/reindex all PASS |
+| QR pairing self-test | **12/12 PASS** — pairing URL bound to camera, PNG magic bytes, signaling accept, single-use replay rejected |
+| RTSP source verifier | **Transport PASS (8 checks)** incl. credentials redaction; live stream **NOT TESTED** (needs a camera) |
+| CCTV auto-process verifier | **Supervisor engine PASS (6 checks)** — health converges ONLINE, reconcile idempotent, flag-clear stops session; live **NOT TESTED**, disabled by default |
+| Evidence indexed (live `/health`) | **28199 indexed, 0 failed, 0 dropped, 0 errors** |
 | Real infrastructure used | PostgreSQL 15.19, MinIO (S3), Qdrant v1.9.4 (384-dim), Docker Compose — **no in-memory fallback** |
 | Inference device | **CPU only** (`torch.cuda.is_available() == False`) |
 | Detection throughput | ~138 ms/frame (live sim), ~212 ms/frame (demo video), `yolov8n` @ 640px |
 | Search latency | 62–146 ms (RAG), 182–206 ms (agent run) |
 | Real IP-camera capture | **PASS** — 572 frames received / 572 sampled / 529 processed / 0 inference errors / ~9 FPS |
 | IP camera re-verified today | **PASS** — 30 frames @ 1920×1080, ~31 FPS, from inside the container |
-| Open items | **5** (ONVIF, dedicated RTSP source, auto CCTV processing, CCTV dashboard, security sweep) |
+| Open items | **4** (CCTV dashboard, security sweep, ONVIF integration, `FINAL_CERTIFICATION_REPORT.md`) |
 
 ---
 
@@ -547,18 +552,19 @@ Three independent layers are used, so that a green result means something:
 | Phase 8 — forensic analysis | **PASS** | 46 checks; timeline, verification, gaps, contradiction; real PDF via ReportLab in MinIO |
 | Test suite | **PASS** | **526 collected, 524 passed, 0 failures**; 2 blocked by host Application Control (§8.5) |
 | Frontend build | **PASS** | `npm run build` clean, **22 routes** incl. `/live/mobile` |
-| End-to-end (11 stages) | **PASS** | 0 failed |
-| Evidence integrity | **CLEAN** | DB ↔ Qdrant ↔ MinIO consistent, 0 orphans |
-| Live `/health` | **PASS** | database ok · qdrant `backend=qdrant` · storage `backend=minio` · indexer **1464 indexed / 0 failed** · 2 active WebRTC sessions |
+| End-to-end (11 stages) | **PASS — re-verified 2026-09-29** | 11 stages, **0 failed, 0 warnings**; `databases.qdrant` now correctly reports `http://qdrant:6333` after the hostname fix (§8.6) |
+| Evidence integrity | **CLEAN — re-verified 2026-09-29** | **0 problems** (was 56 orphaned refs); DB ↔ Qdrant ↔ MinIO consistent, 28199 evidence rows all `INDEXED` |
+| Live `/health` | **PASS** | database ok · qdrant `backend=qdrant` · storage `backend=minio` · indexer **28199 indexed / 0 failed / 0 dropped** |
 | Demo dataset | **PASS** | 196 checks, 0 failures, 7/7 sections |
-| Alembic | **PASS** | `0010_camera_pairings` (head), applied live |
+| Alembic | **PASS — re-verified 2026-09-29** | single head `0010_camera_pairings`, `applied == heads`; the check was repaired after it pinned `0008` (§8.6) |
 | QR pairing self-test | **PASS** | 12/12 checks over real HTTP + WebSocket |
-| **Real IP camera** | **PASS** | 572 frames / 529 YOLO-processed / 0 errors; re-verified today at 1920×1080, ~31 FPS |
-| **Laptop webcam in Docker** | **NOT TESTED** | no `/dev/video*` in the container; host camera not passed through |
+| **Real IP camera** | **PASS** | 572 frames / 529 YOLO-processed / 0 errors, ~9 FPS; source re-verified at 1920×1080, ~31 FPS |
+| **IP camera re-test 2026-09-29** | **FAIL — device offline** | `localhost` port 8080 refused from host *and* container; the phone went away mid-session. Stream URL itself proven earlier: `/video` = 200 MJPEG, `/videos` = 404 |
+| **Laptop webcam in Docker** | **ENVIRONMENT FAILURE** | no `/dev/video*` in the container; Docker Desktop does not pass a host camera through |
 | **Laptop webcam on host** | **PARTIAL** | opens at 640×480, sustained ≈1 FPS |
-| **ONVIF discovery** | **NOT IMPLEMENTED** | zero occurrences of `onvif` in code or docs |
-| **Dedicated `RtspCameraSource`** | **PARTIAL** | `ipcam_camera.py` accepts `rtsp://` generically via the shared path; no distinct class |
-| **Automatic CCTV processing** | **NOT IMPLEMENTED** | schema fields added, no processing loop |
+| **Dedicated `RtspCameraSource`** | **IMPLEMENTED, VERIFIED (transport)** | `app/live/rtsp_camera.py:60`, `name="rtsp"`, registered at `api/live.py:148`, built at `:206`; reuses `LocalOpenCVCameraSource`. 8/8 checks incl. TCP transport augmentation, scheme validation, **credential redaction in health output**. Live RTSP stream **NOT TESTED** (no camera) |
+| **Automatic CCTV processing** | **IMPLEMENTED, VERIFIED (supervisor)** | `app/live/auto_process.py` (341 lines) wired into `main.py:33-42`; 6/6 checks: session start, health → `ONLINE`, `last_seen_at`/`reconnect_attempts` persisted, reconcile idempotent, flag-clear stops session. **Disabled by default** (`LIVE_AUTO_PROCESS_ENABLED=False`); live stream **NOT TESTED** |
+| **ONVIF discovery** | **PARTIAL** | `scripts/discover_onvif_cameras.py` implements a real WS-Discovery probe + profile fetch and resolves RTSP URIs, but it is a **manual script with no API surface**; no ONVIF hardware supplied to test against |
 | **CCTV dashboard route** | **NOT IMPLEMENTED** | no `frontend/app/cameras` route |
 | **Full security sweep** | **NOT PERFORMED** | route-by-route authz, path traversal, FFmpeg command injection into a sweep |
 | **Real VLM provider** | **NOT TESTED** | no provider credentials configured |
@@ -585,12 +591,22 @@ WDAC blocking a DLL), not a project defect. Evidence that it is environmental:
 They are therefore recorded as **environment-blocked**, not as passes and not as
 code failures.
 
-### 8.6 Two further defects found and fixed during this verification run
+### 8.6 Five defects found and fixed during this verification run
 
-| Defect | Impact | Fix |
-|---|---|---|
-| `app/detection/engine.py` used `os` without a module-level `import os` | `model_info()` raised `NameError`; because `live/manager.py:692` wraps the call in `except: pass`, the Live Console **silently showed `—`** instead of the real YOLO model/device — exactly the "no GPU claim without evidence" feature | Added `import os`; removed the now-redundant function-local import. Verified: `model_info()` now returns `model=yolov8n.pt, device=cpu, imgsz=640, classes=80`. Full suite green (exit 0). |
-| `reportlab` pinned in `requirements.txt` but **absent from the running image** (built via `Dockerfile.delta`, which only added `qrcode`) | `FORENSIC_REPORT_RENDERER=reportlab`, so **PDF generation silently degraded to markdown in the deployed stack** — the very failure mode the audit had claimed was fixed | Installed `reportlab==4.2.5` into the running container; verified `reportlab 4.2.5 AVAILABLE`. A rebuild is still required to make it permanent, because the from-scratch image build remains blocked by PyPI throughput on this host. |
+Each was reproduced first, fixed, then re-verified. This is the strongest
+evidence in the report that the verification is genuine rather than asserted.
+
+| # | Defect | Impact | Fix | Re-verified |
+|---|---|---|---|---|
+| 1 | `app/detection/engine.py` used `os` with no module-level `import os` | `model_info()` raised `NameError`; because `live/manager.py:692` wraps it in `except: pass`, the Live Console **silently showed `—`** instead of the real YOLO model/device — exactly the "no GPU claim without evidence" feature | Added `import os`; removed the now-redundant function-local import | `model_info()` → `model=yolov8n.pt, device=cpu, imgsz=640, classes=80`; full suite exit 0 |
+| 2 | `reportlab` pinned in `requirements.txt` but **absent from the running image** (built via `Dockerfile.delta`, which only added `qrcode`) | `FORENSIC_REPORT_RENDERER=reportlab`, so **PDF generation silently degraded to markdown in the deployed stack** — the very failure mode the earlier audit claimed was fixed | Installed `reportlab==4.2.5` into the running container | `reportlab 4.2.5 AVAILABLE`; Phase 8 PDF checks PASS |
+| 3 | `seed_demo_evidence._wipe_demo_evidence()` deleted `EVD-DEMO-%` rows but left `forensic_timeline_events` and `forensic_analyses` referencing them | **56 orphaned references**; every demo reseed cycle left evidence integrity `DISCREPANCIES FOUND` | Wipe now deletes demo-referencing forensic rows **before** the evidence they point at (matched on JSON content) | Integrity **`RESULT: CLEAN`, 0 problems** (42 timeline events + 12 analyses cleaned) |
+| 4 | `verify_final_system.py:175` asserted a **pinned** alembic head `0008_phase8_forensics` | Went stale the moment migrations `0009`/`0010` landed → **Phase 5 reported FAIL on a healthy database**. It also inspected only the script directory, never the live DB | Asserts the real invariant instead: single head, **and** `alembic_version.version_num == heads` | `[PASS] alembic script has a single head` + `[PASS] migrations applied to live DB — current=0010`; **Phase 5 → PASS** |
+| 5 | `run_full_e2e.py:119` probed hard-coded `http://localhost:6333` | Inside the container Qdrant is the service name `qdrant`, so the probe got `Connection refused` and **falsely reported "in-memory vector fallback active"** while real vector search was working — a misleading claim from an honesty-focused verifier | Probes `settings.QDRANT_URL` (the same endpoint the app uses), and no longer asserts a fallback it cannot observe — `/health` remains the authority | `[PASS] databases.qdrant — Qdrant reachable at http://qdrant:6333`; **E2E 11/11, 0 warnings** |
+
+**In-session status changes (fix #4 and #5 were blocking nothing but did corrupt
+the reporting):** Phase 5 moved FAIL → PASS, and the E2E moved from
+`11 stages, 0 failed` *with a warning* to `11 stages, 0 failed, 0 warnings`.
 
 ### 8.3 Measured system metrics
 
@@ -690,11 +706,14 @@ verification is genuine.
 | 13 | Demo verifier asserted 6 videos / 5 cases; dataset has 10 | False verification failure | Assertions aligned to the documented 10-video / 10-case set |
 | 14 | Nested storage directories not created | Local-filesystem storage fallback failed | `makedirs` in the local path resolver |
 | 15 | `report/service.py` 2-argument `list.append` in the markdown fallback | Report generation crashed when ReportLab was absent | Fixed |
-| 16 | `app/detection/engine.py` missing module-level `import os` | `model_info()` raised `NameError`, swallowed by `except: pass` in `live/manager.py` — Live Console showed `—` for the real YOLO model/device | **Found and fixed 2026-09-29** (§8.6); verified real values now returned |
-| 17 | `reportlab` pinned in `requirements.txt` but missing from the running image | PDF reports silently degraded to markdown in the deployed stack | **Found and fixed 2026-09-29** (§8.6); installed into the running container, rebuild still required |
-| 18 | Unit test posted a real LAN IP to the live start endpoint | Suite made real outbound network calls; results depended on the operator's LAN | Replaced with never-listening loopback `127.0.0.1:9` and RFC 5737 ranges; suite now dials loopback only |
-| 19 | `frontend/scripts/{key,cert}.pem` untracked and not ignored | Private TLS key material could be committed accidentally | `*.pem` / `*.key` added to `.gitignore`; confirmed dev-only |
-| 20 | IP camera stream URL confusion (`/videos` vs `/video`) | Operator-facing 503 that looked like a network fault but was a 404 on the path | Diagnosed: device serves `/video` (200 MJPEG), `/videos` and `/h264` (404). Verified `/video` at 1920×1080 / ~31 FPS |
+| 16 | `model_info()` NameError — missing module-level `import os` | Live Console showed `—` instead of the real model/device (swallowed by `except: pass` in `live/manager.py:692`) | **Found and fixed 2026-09-29** — §8.6 defect 1; returns `yolov8n.pt` / `cpu` / 80 classes |
+| 17 | `reportlab` pinned in `requirements.txt` but missing from the running image | `FORENSIC_REPORT_RENDERER=reportlab`, so PDF reports silently degraded to markdown in the deployed stack | **Found and fixed 2026-09-29** — §8.6 defect 2; `reportlab 4.2.5` installed, rebuild still required |
+| 18 | Demo reseeder deleted evidence but left the forensic rows referencing it | 56 orphaned refs; every demo reseed reported `DISCREPANCIES FOUND` | **Found and fixed 2026-09-29** — §8.6 defect 3; integrity now `CLEAN`, 0 problems |
+| 19 | `verify_final_system.py` asserted a pinned alembic head `0008_phase8_forensics` | Phase 5 reported **FAIL on a healthy database** once migrations `0009`/`0010` landed | **Found and fixed 2026-09-29** — §8.6 defect 4; now checks single head + DB `applied == heads` |
+| 20 | `run_full_e2e.py` probed hard-coded `http://localhost:6333` | Inside the container this refused connection, **falsely reporting "in-memory vector fallback active"** while real Qdrant search worked | **Found and fixed 2026-09-29** — §8.6 defect 5; probes `settings.QDRANT_URL` |
+| 21 | Unit test posted a real LAN IP to the live start endpoint | Suite made real outbound network calls; results depended on the operator's LAN | Replaced with never-listening loopback `127.0.0.1:9` and RFC 5737 ranges; suite now dials loopback only |
+| 22 | `frontend/scripts/{key,cert}.pem` untracked and not ignored | Private TLS key material could be committed accidentally | `*.pem` / `*.key` added to `.gitignore`; confirmed dev-only |
+| 23 | IP camera stream URL confusion (`/videos` vs `/video`) | Operator-facing 503 that looked like a network fault but was a 404 on the path | Diagnosed: device serves `/video` (200 MJPEG), `/videos` and `/h264` (404). Verified `/video` at 1920×1080 / ~31 FPS |
 
 **Known pre-existing condition, reported rather than hidden.** Running
 `verify_final_system.py` twice without an intervening `reset_demo_database.py`
@@ -764,27 +783,34 @@ $ ls /dev/video*
 ls: cannot access '/dev/video*': No such file or directory
 ```
 
-Five items block certification:
+Four items still block certification. **Two previously listed blockers were
+closed during this cycle and are now verified** (RTSP source, auto-processing);
+ONVIF moved from `NOT IMPLEMENTED` to `PARTIAL`.
 
-1. **ONVIF discovery — NOT IMPLEMENTED.** Zero occurrences of `onvif` in code
-   or documentation.
-2. **A distinct `RtspCameraSource` — PARTIAL.** `ipcam_camera.py` accepts
-   `rtsp://` URLs generically through the shared OpenCV/FFmpeg path, but there is
-   no dedicated RTSP source class.
-3. **Automatic CCTV processing — NOT IMPLEMENTED.** The schema fields
-   (`auto_process`, `reconnect_attempts`, health) and `PATCH /cameras/{id}` exist,
-   but no processing loop consumes them.
-4. **CCTV dashboard — NOT IMPLEMENTED.** There is no `frontend/app/cameras`
-   route, so registered cameras have no management screen; the audit's route dump
-   independently confirms the absence.
-5. **Full security sweep — NOT PERFORMED.** Route-by-route authorisation review,
+1. **CCTV dashboard — NOT IMPLEMENTED.** No `frontend/app/cameras` route, so
+   registered cameras have no management screen and the `health_status` /
+   `reconnect_attempts` columns written by the auto-process supervisor have no
+   UI to surface them. The route dump independently confirms the absence.
+2. **Full security sweep — NOT PERFORMED.** Route-by-route authorisation review,
    path traversal, FFmpeg command-injection vectors, prompt-injection
    containment, rate limits and secret-leakage-in-logs checks have not been
    executed as a single audit.
+3. **ONVIF integration — PARTIAL.** `scripts/discover_onvif_cameras.py`
+   implements a genuine WS-Discovery probe and profile fetch that resolves RTSP
+   URIs, and the schema columns (`onvif_host`, `onvif_username`,
+   `credential_ref`) exist — but discovery is a **manual, out-of-band script**
+   with no API surface or UI, and no ONVIF hardware was supplied to test it.
+4. **`FINAL_CERTIFICATION_REPORT.md` — DOES NOT EXIST.** The required final
+   deliverable; it must supersede the stale `FINAL_SYSTEM_REPORT.md` and the
+   `PHASE*_REPORT.md` series.
 
-Additionally, the **laptop-webcam chain on a host** is only PARTIAL (opens at
-640×480, sustained ≈1 FPS), and `FINAL_CERTIFICATION_REPORT.md` — the required
-final deliverable — does not yet exist.
+Separately, the **laptop webcam chain** is still `ENVIRONMENT FAILURE` —
+`verify_final_system.py` returns `FINAL STATUS: NOT READY` solely because no
+`/dev/video*` exists inside the container. This is an environment limitation,
+not a code gap: it requires a host-native run (the host webcam is currently
+`PARTIAL` at ≈1 FPS), or a camera reached over the network, which **is**
+proven. The `IP camera re-test 2026-09-29` row shows the device went offline
+mid-session, so today's repeated capture could not be recorded as a pass.
 
 ### 13.2 Full limitation register
 
@@ -833,7 +859,7 @@ Alembic is at head (`0010`); a real network camera is proven end to end; the
 single live-forensic pipeline is coherent with no duplicated capture logic; and
 QR pairing lets a phone onboard without sharing a JWT.
 
-The five blockers are listed in §13.1. This verdict will be upgraded only when
+The four blockers are listed in §13.1. This verdict will be upgraded only when
 those are closed and `FINAL_CERTIFICATION_REPORT.md` is produced.
 
 ---
@@ -842,18 +868,23 @@ those are closed and `FINAL_CERTIFICATION_REPORT.md` is produced.
 
 ### 14.1 Priority 1 — Close the certification blockers
 
-1. Implement **ONVIF discovery** (device enumeration, credential reference) on
-   top of the new `onvif_host` / `onvif_username` / `credential_ref` columns.
-2. Extract a distinct **`RtspCameraSource`** rather than routing `rtsp://`
-   through the generic OpenCV path.
-3. Implement **automatic CCTV processing** consuming `auto_process`,
-   `reconnect_attempts`, `max_processing_fps` and the health fields, with a
-   bounded reconnect/backoff policy in the existing `LiveCameraManager`.
-4. Build the **CCTV dashboard** route (`/cameras`) with health and reconnect
-   controls.
-5. Perform the **full security, performance, concurrency and failure-recovery
+1. Build the **CCTV dashboard** route (`/cameras`) with health, reconnect and
+   `auto_process` controls — this is now the main gap, because the supervisor
+   already writes `health_status` / `last_seen_at` / `reconnect_attempts` /
+   `last_error` with no UI to surface them.
+2. Perform the **full security, performance, concurrency and failure-recovery
    sweeps** (route-by-route authz, path traversal, FFmpeg command injection,
    prompt-injection containment, rate limits, secret leakage in logs).
+3. **Promote ONVIF discovery from script to API** — expose
+   `discover_onvif_cameras.py`'s WS-Discovery probe behind an authenticated
+   endpoint so a camera can be registered in one action, and supply ONVIF
+   hardware to test against (currently `PARTIAL`, script-only).
+4. **Verify RTSP and auto-processing on real hardware** — both are implemented
+   and their non-hardware checks pass (8/8 and 6/6), but `Live RTSP stream` and
+   `Live session` are still `NOT TESTED`. Enable
+   `LIVE_AUTO_PROCESS_ENABLED` in the deployment (it is inert by default) and
+   record a run against a real camera.
+5. Re-run the **golden end-to-end** against a physical camera.
 
 ### 14.2 Priority 2 — Rebuild and close the deployment gap
 
@@ -922,10 +953,17 @@ automated tests are recorded as **environment-blocked** rather than passed. The
 research team considers a report that overstated its verification to be a failed
 deliverable, and this one is written accordingly.
 
-Notably, this reporting cycle itself **found and fixed two real defects** — a
-missing `import os` that silently blanked the Live Console's honest
-model/device reporting, and a missing `reportlab` in the deployed image that
-silently degraded PDF reports to markdown. Both are documented in §8.6 and §10.
+Notably, this reporting cycle itself **found and fixed five real defects**
+(§8.6): a missing `import os` that silently blanked the Live Console's honest
+model/device reporting; a missing `reportlab` in the deployed image that
+silently degraded PDF reports to markdown; a demo reseeder that orphaned 56
+forensic references on every reset; a verifier asserting a stale pinned alembic
+head that made Phase 5 report FAIL on a healthy database; and a verifier probing
+`localhost:6333` that falsely claimed an in-memory vector fallback was active
+while real Qdrant search was working. The last two are particularly worth
+noting: **they were defects in the verification tooling itself**, so the earlier
+green results were partly reporting on the wrong things. Finding them is a
+better result than having them stay hidden.
 
 The next cycle is well defined: implement the four missing camera capabilities,
 run the security sweep, rebuild the image properly, integrate a real VLM, and
@@ -1023,10 +1061,17 @@ python backend/scripts/verify_evidence_integrity.py
 
 # 6. Camera sources
 python backend/scripts/verify_webcam.py --probe                  # indices 0..3 (no device in Docker)
-python backend/scripts/verify_webcam.py --device 0 --seconds 10 # host-native only
-python backend/scripts/verify_ipcam.py                             # real network stream
-#   NOTE: the phone serves /video  (200 MJPEG); /videos and /h264 return 404
-python backend/scripts/verify_qr_pairing.py                        # expect: 12/12 PASS
+python backend/scripts/verify_webcam.py --device 0 --seconds 10  # host-native only
+python backend/scripts/verify_qr_pairing.py --cleanup            # expect: 12/12 PASS
+python backend/scripts/verify_ipcam.py --url http://<phone-ip>:8080/video
+#   NOTE: the phone serves /video (200 MJPEG); /videos and /h264 return 404.
+#   --url is the flag (not --stream-url); omit it for the reachability-only check.
+
+python backend/scripts/verify_rtsp_camera.py                     # transport PASS (8 checks)
+#   add --stream-url rtsp://user:pass@cam:554/stream to test a real camera
+python backend/scripts/verify_cctv_auto_processing.py            # supervisor PASS (6 checks)
+#   add --stream-url for the live session; deployment banner reports whether
+#   LIVE_AUTO_PROCESS_ENABLED is on (inert by default)
 
 # 7. Full live chain (host-native backend with a reachable camera)
 uvicorn app.main:app --reload

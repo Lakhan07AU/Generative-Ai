@@ -165,15 +165,25 @@ def check_phase5() -> str:
         _note(sec, ENV_FAILURE, f"PostgreSQL unavailable: {exc}")
 
     # -- alembic head -------------------------------------------------------
+    # The real invariant is "one head, and the live DB is AT that head".
+    # Asserting a pinned revision name goes stale the moment a migration is
+    # added (0008 -> 0009/0010 made this check fail spuriously), so compare
+    # the script's head against what the database actually reports.
     try:
         from alembic.config import Config
         from alembic.script import ScriptDirectory
 
+        from app.database.session import engine
+
         cfg = Config(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "alembic.ini"))
         script = ScriptDirectory.from_config(cfg)
         heads = script.get_heads()
-        _record(sec, "alembic head == 0008_phase8_forensics",
-                any("0008" in h and "phase8" in h for h in heads), f"heads={heads}")
+        _record(sec, "alembic script has a single head", len(heads) == 1, f"heads={heads}")
+
+        with engine.connect() as conn:
+            applied = conn.execute(text("select version_num from alembic_version")).scalar()
+        _record(sec, "live DB revision == script head", applied in heads,
+                f"applied={applied} heads={heads}")
     except Exception as exc:  # noqa: BLE001
         _note(sec, NOT_TESTED, f"alembic head inspection failed: {exc}")
 
@@ -185,8 +195,11 @@ def check_phase5() -> str:
 
         cfg = Cfg(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "alembic.ini"))
         cfg.set_main_option("sqlalchemy.url", str(engine.url).replace("%", "%%"))
+        with engine.connect() as conn:
+            current = conn.execute(text("select version_num from alembic_version")).scalar()
         command.current(cfg, verbose=False)
-        _record(sec, "migrations applied to live DB", True, "alembic current executed")
+        _record(sec, "migrations applied to live DB", bool(current),
+                f"alembic current={current}")
     except Exception as exc:  # noqa: BLE001
         _record(sec, "migrations applied to live DB", False, str(exc)[:200])
 

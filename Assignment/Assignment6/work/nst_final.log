@@ -1,0 +1,14 @@
+size 512 steps 120 lr 0.01 style_w 1000.0 content_w 1.0
+vgg loaded 2.1s
+content feat 22 (1, 512, 64, 64)
+style feat 1 (1, 64, 512, 512)
+style feat 6 (1, 128, 256, 256)
+style feat 11 (1, 256, 128, 128)
+style feat 20 (1, 512, 64, 64)
+style feat 29 (1, 512, 32, 32)
+step    1  total 0.0642  style 0.00006  content 0.00000  (7.9s)
+step   25  total 0.1443  style 0.00004  content 0.10023  (86.4s)
+step   50  total 0.0866  style 0.00004  content 0.04543  (173.1s)
+step   75  total 0.0690  style 0.00004  content 0.02984  (248.2s)
+step  100  total 0.0608  style 0.00004  content 0.02322  (365.1s)
+saved final 484.1828944683075 sec

@@ -116,7 +116,14 @@ def _detect(base: str) -> tuple[bool, bool, dict]:
     qdrant_ok = False
     qdrant_detail = ""
     try:
-        urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
+        from app.core.config import settings
+
+        # Probe the SAME endpoint the application uses. Hardcoding
+        # http://localhost:6333 makes the check fail inside the backend
+        # container (where Qdrant is the service name `qdrant`), which
+        # falsely reported "in-memory vector fallback active" while real
+        # vector search was working.
+        urllib.request.urlopen(settings.QDRANT_URL.rstrip("/") + "/collections", timeout=2)
         qdrant_ok = True
     except Exception as exc:  # noqa: BLE001
         qdrant_detail = str(exc)[:200]
@@ -323,6 +330,8 @@ def _forensic(base: str, token: str) -> tuple[str, str]:
 
 
 def main() -> None:
+    from app.core.config import settings
+
     parser = argparse.ArgumentParser(description="Phase 9 full E2E verifier")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")
     parser.add_argument("--reset-db", action="store_true",
@@ -342,9 +351,12 @@ def main() -> None:
     note = "PostgreSQL reachable" if db_ok else f"PostgreSQL unreachable: {det['db']}"
     stage("databases.postgres", "PASS" if db_ok else NOT_TESTED, note)
     if qdrant_ok:
-        stage("databases.qdrant", "PASS", "Qdrant reachable")
+        stage("databases.qdrant", "PASS", "Qdrant reachable at " + settings.QDRANT_URL)
     else:
-        stage("databases.qdrant", "WARN", "Qdrant unavailable - in-memory vector fallback active: " + det["qdrant"])
+        # Do not assert a fallback is active: only /health knows which vector
+        # backend the application actually selected.
+        stage("databases.qdrant", "WARN",
+              "probe of " + settings.QDRANT_URL + " failed: " + det["qdrant"])
 
     # 2. clean start / seed
     if args.reset_db and db_ok:

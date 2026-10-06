@@ -28,7 +28,9 @@ from app.auth.security import hash_password
 from app.database.models import (
     Camera,
     CameraSession,
+    ForensicAnalysis,
     ForensicEvidence,
+    ForensicTimelineEvent,
     Investigation,
     User,
     Video,
@@ -215,6 +217,36 @@ def _ensure_session(db, camera_id: int, user_id: int, frames: int) -> CameraSess
 
 
 def _wipe_demo_evidence(db) -> None:
+    # Forensic timeline events and analyses embed evidence ids in JSON text
+    # columns, so deleting the evidence alone would leave dangling references
+    # ("EVD-DEMO-... does not exist") and make the integrity verifier report
+    # discrepancies after an otherwise clean reset -> seed cycle. Drop the
+    # demo-derived forensic rows FIRST, while the references can still be
+    # matched, then remove the evidence they pointed at.
+    stale_events = (
+        db.query(ForensicTimelineEvent)
+        .filter(ForensicTimelineEvent.evidence_ids.like("%EVD-DEMO-%"))
+        .all()
+    )
+    for event in stale_events:
+        db.delete(event)
+
+    stale_analyses = (
+        db.query(ForensicAnalysis)
+        .filter(
+            (ForensicAnalysis.timeline.like("%EVD-DEMO-%"))
+            | (ForensicAnalysis.findings.like("%EVD-DEMO-%"))
+            | (ForensicAnalysis.correlations.like("%EVD-DEMO-%"))
+            | (ForensicAnalysis.contradictions.like("%EVD-DEMO-%"))
+            | (ForensicAnalysis.relationships.like("%EVD-DEMO-%"))
+            | (ForensicAnalysis.multi_camera.like("%EVD-DEMO-%"))
+        )
+        .all()
+    )
+    for analysis in stale_analyses:
+        db.delete(analysis)
+    db.flush()
+
     rows = (
         db.query(ForensicEvidence)
         .filter(ForensicEvidence.public_id.like("EVD-DEMO-%"))
