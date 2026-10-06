@@ -1,0 +1,36 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "setup: install portable Git + Ollama",
+      "type": "process",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/setup.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "ollama: serve",
+      "type": "process",
+      "command": "${env:LOCALAPPDATA}\\miniproject-tools\\ollama\\ollama.exe",
+      "args": ["serve"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "lint: ruff",
+      "type": "process",
+      "command": "ruff",
+      "args": ["check", "."],
+      "problemMatcher": []
+    }
+  ]
+}
