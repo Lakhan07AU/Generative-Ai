@@ -1,0 +1,6 @@
+Assignment 8 – Short Observations
+
+1. Similar digits form recognizable clusters in the 2D latent space, although some classes overlap.
+2. The clusters are partially separated rather than perfectly separated because the VAE is unsupervised and uses only two latent dimensions.
+3. Moving gradually through the latent space changes the generated digits gradually, with shape, stroke direction, thickness, and curvature morphing between neighbouring regions.
+4. The transitions are generally smooth. Some intermediate outputs become blurry or ambiguous, which is expected between digit classes.
