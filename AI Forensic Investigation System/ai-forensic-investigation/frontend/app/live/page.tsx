@@ -18,6 +18,8 @@ import {
   Fingerprint,
   QrCode,
   X,
+  FileText,
+  Download,
 } from "lucide-react";
 import {
   api,
@@ -46,6 +48,7 @@ import {
   EvidenceSearchHit,
   DemoVideoAsset,
   ApiError,
+  Report,
 } from "@/lib/api";
 import { ProtectedShell } from "@/components/protected-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -293,6 +296,11 @@ export default function LivePage() {
   const [evidencePreview, setEvidencePreview] = useState<string | null>(null);
   const [evidencePreviewMeta, setEvidencePreviewMeta] = useState<LiveEvidence | null>(null);
   const [evidenceDetail, setEvidenceDetail] = useState<LiveEvidenceDetail | null>(null);
+
+  // live report generation
+  const [liveReport, setLiveReport] = useState<Report | null>(null);
+  const [generatingLiveReport, setGeneratingLiveReport] = useState(false);
+
 
   // camera registration form
   const [newName, setNewName] = useState("");
@@ -933,6 +941,20 @@ export default function LivePage() {
     if (cameraId) await stopSessionApi(cameraId);
   }
 
+  async function generateLiveReport() {
+    if (!selectedCameraId) return;
+    setError("");
+    setGeneratingLiveReport(true);
+    try {
+      const newReport = await api.generateLiveReport(Number(selectedCameraId));
+      setLiveReport(newReport);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to generate live report");
+    } finally {
+      setGeneratingLiveReport(false);
+    }
+  }
+
   async function onSwitchCamera() {
     const next = facing === "environment" ? "user" : "environment";
     setFacing(next);
@@ -1158,6 +1180,40 @@ export default function LivePage() {
                 <Button variant="destructive" onClick={onStop} disabled={!streaming && !session}>
                   <VideoOff className="h-4 w-4" /> Stop
                 </Button>
+                {selectedCameraId && (
+                  <>
+                    <Button
+                      onClick={generateLiveReport}
+                      disabled={generatingLiveReport || !streaming}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {generatingLiveReport ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
+                      )}
+                      {" "}
+                      {generatingLiveReport ? "Generating Report…" : "Generate Report"}
+                    </Button>
+                    {!generatingLiveReport && liveReport && (
+                      <Button
+                        onClick={async () => {
+                          setError("");
+                          try {
+                            await api.downloadReport(liveReport.id, true);
+                          } catch (e) {
+                            setError(e instanceof Error ? e.message : "Save failed");
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Download className="h-3 w-3" /> Save Report
+                      </Button>
+                    )}
+                  )}
+                )}
               </div>
               {streaming && (
                 <Button variant="outline" className="w-full" onClick={onSwitchCamera}>

@@ -22,6 +22,8 @@ from app.auth.deps import get_current_user, require_roles
 from app.audit.service import record_audit
 from app.storage.service import storage
 from app.core.config import settings
+from app.report import service as report_service
+from app.schemas import report as report_schemas
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -289,6 +291,82 @@ def list_events(
     current_user: models.User = Depends(get_current_user),
 ):
     return db.query(models.Event).filter(models.Event.video_id == video_id).order_by(models.Event.start_time).all()
+
+
+@router.post("/{video_id}/report/generate", response_model=report_schemas.ReportDetail)
+def generate_video_report(
+    video_id: int,
+    payload: report_schemas.ReportGenerateRequest = report_schemas.ReportGenerateRequest(),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Generate a structured incident report directly from a video (no investigation needed)."""
+    video = db.query(models.Video).filter(models.Video.id == video_id).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    if video.status not in ("READY", "COMPLETED"):
+        raise HTTPException(status_code=409, detail="Video must be processed before generating a report")
+
+    # Create a temporary investigation as the report container
+    inv = models.Investigation(
+        title=payload.title or f"Video Report — {video.filename}",
+        description=f"Auto-generated report for video: {video.filename}",
+        query=f"Report on video {video.filename}",
+        video_id=video_id,
+        status="COMPLETED",
+        created_by_user_id=current_user.id,
+    )
+    db.add(inv)
+    db.flush()
+
+    # Persist detected objects as claims so the report has evidence
+    detections = db.query(models.Detection).filter(models.Detection.video_id == video_id).all()
+    for det in detections:
+        claim = models.Claim(
+            investigation_id=inv.id,
+            claim_text=f"{det.label or 'object'} detected at {det.timestamp or 0:.1f}s",
+            claim_type="OBSERVATION",
+            status="VERIFIED",
+        )
+        db.add(claim)
+        db.flush()
+        if det.clip_id:
+            db.add(
+                models.ClaimEvidence(
+                    claim_id=claim.id,
+                    clip_id=det.clip_id,
+                    frame_id=None,
+                    timestamp=det.timestamp,
+                    evidence_type="detection",
+                    relevance_score=det.detection_confidence,
+                )
+            )
+
+    # Persist timeline events as timeline records
+    events = db.query(models.Event).filter(models.Event.video_id == video_id).order_by(models.Event.start_time).all()
+    for ev in events:
+        db.add(
+            models.TimelineEvent(
+                investigation_id=inv.id,
+                timestamp=ev.start_time or 0,
+                description=ev.description or ev.event_type,
+                status="VERIFIED",
+                evidence_ids="[]",
+            )
+        )
+
+    db.commit()
+
+    report = report_service.generate_report(db, inv.id, user_id=current_user.id, title=payload.title)
+    record_audit(
+        db,
+        "video_report_generated",
+        user_id=current_user.id,
+        entity_type="video",
+        entity_id=video_id,
+        details=f"video_id={video_id} report_id={report.id}",
+    )
+    return report
 
 
 def _parse_datetime(value: Optional[str]) -> Optional[datetime]:

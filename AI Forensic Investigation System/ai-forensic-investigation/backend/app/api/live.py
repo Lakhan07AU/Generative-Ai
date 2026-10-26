@@ -21,7 +21,8 @@ from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.database.models import Camera, CameraSession, User
+from app.database import models
+from app.database.models import Camera, CameraSession, User, Investigation, InvestigationRun, Claim, ClaimEvidence, TimelineEvent, ForensicEvidence
 from app.schemas.live import CameraSessionOut, LiveStartRequest, LiveStatusOut, VlmAnalyzeRequest
 from app.auth.deps import get_current_user, require_roles
 from app.auth.security import decode_access_token
@@ -34,6 +35,8 @@ from app.live.usb_camera import UsbCameraSource
 from app.live.webcam_camera import WebcamCameraSource
 from app.live.video_feeder import VideoFileFeeder
 from app.live.pairing import create_pairing, pairing_url, render_pairing_qr, consume_pairing, QRError
+from app.report import service as report_service
+from app.schemas import report as report_schemas
 
 logger = logging.getLogger(__name__)
 
@@ -1045,3 +1048,114 @@ async def ws_live_vlm(websocket: WebSocket, camera_id: int, db: Session = Depend
             await websocket.close()
         except Exception:  # noqa: BLE001
             pass
+
+
+# ------------------------------------------------------------------- Live report
+
+
+@router.post(
+    "/live/cameras/{camera_id}/report/generate",
+    response_model=report_schemas.ReportDetail,
+)
+def generate_live_camera_report(
+    camera_id: int,
+    payload: report_schemas.ReportGenerateRequest = report_schemas.ReportGenerateRequest(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(*LIVE_ROLES)),
+):
+    """Generate a plain-language incident report from live camera evidence.
+
+    Builds an investigation from the camera's forensic evidence (JPEG captures
+    with SHA-256 provenance) and any tracking / VLM observations stored for the
+    live session, then renders a full 11-section report in plain language that
+    anyone can understand.
+    """
+    camera = db.query(Camera).filter(Camera.id == camera_id).first()
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+
+    # Gather forensic evidence captured for this camera
+    evidence_rows = (
+        db.query(ForensicEvidence)
+        .filter(ForensicEvidence.camera_id == camera_id)
+        .order_by(ForensicEvidence.captured_at.asc())
+        .all()
+    )
+    if not evidence_rows:
+        raise HTTPException(
+            status_code=409,
+            detail="No forensic evidence captured for this camera yet. Start a live session and capture evidence first.",
+        )
+
+    # Create an investigation as the report container
+    camera_name = camera.camera_name or f"Camera {camera_id}"
+    inv = models.Investigation(
+        title=payload.title or f"Live Camera Report — {camera_name}",
+        description=(
+            f"Plain-language report generated from live camera evidence captured on "
+            f"camera '{camera_name}'. All findings are backed by captured evidence frames "
+            "with SHA-256 hash verification so they can be proven authentic."
+        ),
+        query=f"Summarize live camera evidence for camera {camera_id}",
+        video_id=None,
+        status="COMPLETED",
+        created_by_user_id=current_user.id,
+    )
+    db.add(inv)
+    db.flush()
+
+    # Persist each evidence record as a verified claim with plain-language description
+    for ev in evidence_rows:
+        # Build a plain-language description of what was captured
+        obj_type = ev.object_class or ev.label or "object"
+        if not obj_type or obj_type.lower() in ("unknown", "object"):
+            obj_type = "object"
+        obj_type = obj_type.lower()
+        # Simple pluralization
+        obj_label = f"{obj_type}s" if not obj_type.endswith("s") else obj_type
+
+        ts_str = "unknown time"
+        if ev.captured_at:
+            try:
+                ts_str = ev.captured_at.strftime("%I:%M %p on %B %d, %Y")
+            except Exception:
+                ts_str = str(ev.captured_at)
+
+        # Build a readable claim describing what was seen
+        claim_text = (
+            f"A {obj_label} was captured by the camera at {ts_str}. "
+            f"The frame was saved as evidence with a digital fingerprint "
+            f"(SHA-256: {ev.sha256[:12]}...) so it can be verified as authentic."
+        )
+
+        claim = models.Claim(
+            investigation_id=inv.id,
+            claim_text=claim_text,
+            claim_type="OBSERVATION",
+            status="VERIFIED",
+        )
+        db.add(claim)
+        db.flush()
+        db.add(
+            models.ClaimEvidence(
+                claim_id=claim.id,
+                clip_id=None,
+                frame_id=None,
+                timestamp=ev.captured_at.timestamp() if ev.captured_at else None,
+                evidence_type=ev.evidence_type or "evidence",
+                relevance_score=1.0,
+            )
+        )
+
+    db.commit()
+
+    report = report_service.generate_report(db, inv.id, user_id=current_user.id, title=payload.title)
+    record_audit(
+        db,
+        "live_report_generated",
+        user_id=current_user.id,
+        entity_type="camera",
+        entity_id=camera_id,
+        details=f"camera_id={camera_id} investigation_id={inv.id} report_id={report.id}",
+    )
+    return report

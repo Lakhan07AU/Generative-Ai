@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Send,
@@ -16,8 +17,10 @@ import {
   GitBranch,
   Clock,
   AlertTriangle,
+  FileText,
+  Download,
 } from "lucide-react";
-import { api, Investigation, Claim, TimelineEvent, AgentAnswer } from "@/lib/api";
+import { api, Investigation, Claim, TimelineEvent, AgentAnswer, Report } from "@/lib/api";
 import { ProtectedShell } from "@/components/protected-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,11 +40,15 @@ export default function InvestigationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const investigationId = Number(params.id);
+  const { id } = params;
+  const investigationId = Number(id);
+  const router = useRouter();
   const [investigation, setInvestigation] = useState<Investigation | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [error, setError] = useState("");
+  const [report, setReport] = useState<Report | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
@@ -60,6 +67,22 @@ export default function InvestigationDetailPage({
       setTimeline(tl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load investigation");
+    }
+  }
+
+  async function generateInvestigationReport() {
+    setError("");
+    setGeneratingReport(true);
+    try {
+      const newReport = await api.generateReport(investigationId);
+      setReport(newReport);
+      await loadDetail();
+      // Auto-navigate to the report page
+      router.push(`/reports/${newReport.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to generate report");
+    } finally {
+      setGeneratingReport(false);
     }
   }
 
@@ -160,21 +183,44 @@ export default function InvestigationDetailPage({
               <h1 className="text-2xl font-bold text-navy">{investigation.title}</h1>
               <p className="text-sm text-slate-500">{investigation.query}</p>
             </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${statusTone(
-                  investigation.status
-                )}`}
-              >
-                {investigation.status}
-              </span>
-              <Link
-                href={`/investigations/${investigationId}/investigate`}
-                className="inline-flex items-center gap-1 rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy/90"
-              >
-                <GitBranch className="h-4 w-4" /> Run investigator
-              </Link>
-            </div>
+              <div className="flex items-center gap-3">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${statusTone(
+                    investigation.status
+                  )}`}
+                >
+                  {investigation.status}
+                </span>
+                <Link
+                  href={`/investigations/${investigationId}/investigate`}
+                  className="inline-flex items-center gap-1 rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy/90"
+                >
+                  <GitBranch className="h-4 w-4" /> Run investigator
+                </Link>
+                <Button
+                  onClick={generateInvestigationReport}
+                  disabled={generatingReport || !investigation.claims?.length}
+                  variant="outline"
+                  size="sm"
+                >
+                  {generatingReport ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <FileText className="h-3 w-3" />
+                  )}
+                  {" "}
+                  {generatingReport ? "Generating…" : "Generate Report"}
+                </Button>
+                {!generatingReport && report && (
+                  <Button
+                    onClick={() => api.downloadReport(report.id, true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Download className="h-3 w-3" /> Download PDF
+                  </Button>
+                )}
+              </div>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">

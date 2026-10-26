@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.storage.service import storage
 from app.video.pipeline import run_pipeline
 from app.audit.service import record_audit
+from app.report import service as report_service
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,70 @@ def process_video_job(video_id: int, job_id: int, local_video_path: str, user_id
             video.status = "READY"
             db.commit()
         record_audit(db, "processing_complete", user_id=user_id, entity_type="processing_job", entity_id=job_id, details=f"video_id={video_id}")
+
+        # Auto-generate incident report after successful processing
+        try:
+            # Create an investigation as the report container for this video
+            inv = models.Investigation(
+                title=f"Video Report — {video.filename}",
+                description=f"Auto-generated report for uploaded video: {video.filename}",
+                query=f"Report on video {video.filename}",
+                video_id=video_id,
+                status="COMPLETED",
+                created_by_user_id=user_id,
+            )
+            db.add(inv)
+            db.flush()
+
+            # Persist detected objects as claims so the report has evidence
+            detections = db.query(models.Detection).filter(models.Detection.video_id == video_id).all()
+            for det in detections:
+                claim = models.Claim(
+                    investigation_id=inv.id,
+                    claim_text=f"{det.label or 'object'} detected at {det.timestamp or 0:.1f}s",
+                    claim_type="OBSERVATION",
+                    status="VERIFIED",
+                )
+                db.add(claim)
+                db.flush()
+                if det.clip_id:
+                    db.add(
+                        models.ClaimEvidence(
+                            claim_id=claim.id,
+                            clip_id=det.clip_id,
+                            frame_id=None,
+                            timestamp=det.timestamp,
+                            evidence_type="detection",
+                            relevance_score=det.detection_confidence,
+                        )
+                    )
+
+            # Persist timeline events as timeline records
+            events = db.query(models.Event).filter(models.Event.video_id == video_id).order_by(models.Event.start_time).all()
+            for ev in events:
+                db.add(
+                    models.TimelineEvent(
+                        investigation_id=inv.id,
+                        timestamp=ev.start_time or 0,
+                        description=ev.description or ev.event_type,
+                        status="VERIFIED",
+                        evidence_ids="[]",
+                    )
+                )
+
+            db.commit()
+
+            report = report_service.generate_report(db, inv.id, user_id=user_id, title=f"Incident Report — {video.filename}")
+            record_audit(
+                db,
+                "video_report_auto_generated",
+                user_id=user_id,
+                entity_type="video",
+                entity_id=video_id,
+                details=f"video_id={video_id} report_id={report.id}",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Auto-report generation failed for video %s: %s", video_id, exc)
 
     except Exception as exc:  # noqa: BLE001
         logger.error("Processing failed for video %s: %s", video_id, traceback.format_exc())

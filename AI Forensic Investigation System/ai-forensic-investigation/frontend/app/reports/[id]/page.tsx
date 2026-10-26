@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Loader2,
@@ -32,9 +32,9 @@ import { useAuth } from "@/lib/auth-context";
 export default function ReportDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const reportId = Number(id);
   const { user } = useAuth();
 

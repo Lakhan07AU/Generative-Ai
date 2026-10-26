@@ -219,16 +219,27 @@ def _section_supporting_evidence(claims: List[models.Claim]) -> dict:
         if not _claim_is_verified(c):
             continue
         ver = _claim_last_verification(c)
+        ev_list = []
+        for l in (c.evidence_links or []):
+            ev_list.append({
+                "claim_id": c.id,
+                "clip_id": l.clip_id,
+                "clip_public_id": l.clip.public_id if l.clip else None,
+                "video_id": l.clip.video_id if l.clip else None,
+                "timestamp": l.timestamp,
+                "evidence_type": l.evidence_type,
+                "relevance_score": l.relevance_score,
+            })
         rows.append({
             "claim_id": c.id,
             "claim_text": c.claim_text,
             "claim_type": c.claim_type,
             "status": c.status,
             "timestamp": _format_ts(c.evidence_links[0].timestamp if c.evidence_links else None),
-            "evidence_ids": [l.clip_public_id for l in (c.evidence_links or []) if l.clip_public_id],
+            "evidence_ids": [l.clip.public_id for l in (c.evidence_links or []) if l.clip and l.clip.public_id],
             "verification_result": ver.result if ver else c.status,
             "verification_reason": ver.reason if ver else None,
-            "evidence_links": _claim_evidence(c),
+            "evidence_links": ev_list,
         })
     return {
         "title": "Supporting Evidence",
