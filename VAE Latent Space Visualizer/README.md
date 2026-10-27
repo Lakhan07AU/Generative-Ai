@@ -186,6 +186,8 @@ L_total = L_recon + β × KL
 ```
 
 - **β = 1.0** (standard VAE)
+- **Free bits = 0.5** per latent dimension (prevents posterior collapse)
+- **KL annealing**: β ramps from 0 to 1 over first 5 epochs
 - **β > 1.0** (β-VAE): stronger regularization, more disentangled but blurrier
 - **β < 1.0**: weaker regularization, better reconstruction but less structured latent space
 
@@ -325,7 +327,7 @@ python train.py
 ### Custom Training Configuration
 
 ```bash
-python train.py --epochs 20 --batch-size 256 --lr 0.001 --beta 1.0 --latent-dim 2
+python train.py --epochs 20 --batch-size 256 --lr 0.001 --beta 1.0 --warmup-epochs 5 --free-bits 0.5 --latent-dim 2
 ```
 
 | Argument | Default | Description |
@@ -334,6 +336,8 @@ python train.py --epochs 20 --batch-size 256 --lr 0.001 --beta 1.0 --latent-dim 
 | `--batch-size` | 128 | Batch size |
 | `--lr` | 0.001 | Learning rate (Adam) |
 | `--beta` | 1.0 | KL divergence weight |
+| `--warmup-epochs` | 5 | KL annealing warmup epochs |
+| `--free-bits` | 0.5 | Free bits per latent dimension |
 | `--latent-dim` | 2 | Latent space dimension |
 | `--seed` | 42 | Random seed |
 | `--checkpoint` | models/vae_mnist.pth | Output checkpoint path |
@@ -450,9 +454,9 @@ python evaluate.py
 ==================================================
 EVALUATION RESULTS
 ==================================================
-Test Reconstruction Loss (BCE):  0.262586
-Test KL Divergence:              0.000000
-Test Total VAE Loss:             0.262587
+Test Reconstruction Loss (BCE):  0.244512
+Test KL Divergence:              1.000007
+Test Total VAE Loss:             1.244519
 Number of test batches:          79
 ```
 
@@ -504,7 +508,7 @@ Decoder:
 | **Information Loss** | 784 → 2 dimensions discards significant information; fine stroke details lost |
 | **Small Latent Dimension** | 2D enables visualization but limits capacity; 10–20D typical for better reconstruction |
 | **KL vs Reconstruction Tradeoff** | β=1 forces latent space to match N(0,I), competing with reconstruction quality |
-| **Posterior Collapse** | Strong decoder (e.g., autoregressive) can ignore latent code; less common with FCN decoder |
+| **Posterior Collapse** | Encoder collapses to prior (μ=0, logvar=0), decoder ignores latent code. Fixed with free bits (0.5 nats/dim) and KL annealing (5-epoch warmup). |
 | **Training Time** | ~2–5 min on CPU for 15 epochs; GPU reduces to ~30 sec |
 | **Mode Coverage** | VAE may not capture all data modes; some digits underrepresented in latent space |
 

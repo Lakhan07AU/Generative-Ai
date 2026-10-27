@@ -78,7 +78,7 @@ def evaluate_model(model: VAE, test_loader, device: torch.device,
             images = images.to(device)
             
             recon, mu, logvar = model(images)
-            losses = vae_loss(recon, images, mu, logvar, beta=beta)
+            losses = vae_loss(recon, images, mu, logvar, beta=beta, free_bits=0.5)
             
             total_recon += losses['reconstruction'].item()
             total_kl += losses['kl'].item()

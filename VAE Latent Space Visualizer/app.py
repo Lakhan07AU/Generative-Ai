@@ -195,7 +195,7 @@ def main():
         # Show reconstruction loss for selected sample
         with torch.no_grad():
             recon, mu, logvar = model(test_images[sample_idx:sample_idx+1])
-            losses = vae_loss(recon, test_images[sample_idx:sample_idx+1], mu, logvar, beta=beta)
+            losses = vae_loss(recon, test_images[sample_idx:sample_idx+1], mu, logvar, beta=beta, free_bits=0.5)
             recon_loss = losses['reconstruction'].item()
             kl_loss = losses['kl'].item()
             total_loss = losses['total'].item()
@@ -226,55 +226,53 @@ def main():
     # ============================================================
     st.markdown('<h2 class="section-header">2. Interactive Latent Space</h2>', unsafe_allow_html=True)
     
-    tab1, tab2 = st.tabs(["Latent Space Scatter", "Latent Space Generation"])
+    st.write("2D scatter plot of encoded MNIST test images. Points colored by digit label.")
     
-    with tab1:
-        st.write("2D scatter plot of encoded MNIST test images. Points colored by digit label.")
+    # Option to limit samples for performance
+    num_scatter_samples = st.slider(
+        "Number of samples for scatter plot",
+        min_value=500,
+        max_value=5000,
+        value=2000,
+        step=500
+    )
+    
+    with st.spinner("Encoding test set..."):
+        fig = plot_latent_space(model, test_loader, device, num_samples=num_scatter_samples)
+        st.pyplot(fig)
+        plt.close(fig)
+    
+    st.divider()
+    
+    st.write("Adjust latent coordinates (z₁, z₂) to generate new digit images.")
+    
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        # Latent sliders
+        z1 = st.slider("Latent Dimension 1 (z₁)", -3.0, 3.0, 0.0, 0.1, key="z1_slider")
+        z2 = st.slider("Latent Dimension 2 (z₂)", -3.0, 3.0, 0.0, 0.1, key="z2_slider")
         
-        # Option to limit samples for performance
-        num_scatter_samples = st.slider(
-            "Number of samples for scatter plot",
-            min_value=500,
-            max_value=5000,
-            value=2000,
-            step=500
-        )
+        # Generate from latent coordinates
+        with torch.no_grad():
+            z = torch.tensor([[z1, z2]], dtype=torch.float32).to(device)
+            generated = model.decode(z).cpu().squeeze().numpy()
         
-        with st.spinner("Encoding test set..."):
-            fig = plot_latent_space(model, test_loader, device, num_samples=num_scatter_samples)
+        # Display generated image
+        fig, ax = plt.subplots(figsize=(3, 3))
+        ax.imshow(generated, cmap='gray', vmin=0, vmax=1)
+        ax.axis('off')
+        ax.set_title(f'Generated (z₁={z1:.1f}, z₂={z2:.1f})')
+        st.pyplot(fig)
+        plt.close(fig)
+    
+    with col2:
+        # Show full grid
+        st.write("**Full Latent Space Grid (15×15):**")
+        with st.spinner("Generating grid..."):
+            fig = plot_generated_grid(model.decoder, device, grid_size=15)
             st.pyplot(fig)
             plt.close(fig)
-    
-    with tab2:
-        st.write("Adjust latent coordinates (z₁, z₂) to generate new digit images.")
-        
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            # Latent sliders
-            z1 = st.slider("Latent Dimension 1 (z₁)", -3.0, 3.0, 0.0, 0.1)
-            z2 = st.slider("Latent Dimension 2 (z₂)", -3.0, 3.0, 0.0, 0.1)
-            
-            # Generate from latent coordinates
-            with torch.no_grad():
-                z = torch.tensor([[z1, z2]], dtype=torch.float32).to(device)
-                generated = model.decode(z).cpu().squeeze().numpy()
-            
-            # Display generated image
-            fig, ax = plt.subplots(figsize=(3, 3))
-            ax.imshow(generated, cmap='gray', vmin=0, vmax=1)
-            ax.axis('off')
-            ax.set_title(f'Generated (z₁={z1:.1f}, z₂={z2:.1f})')
-            st.pyplot(fig)
-            plt.close(fig)
-        
-        with col2:
-            # Show full grid
-            st.write("**Full Latent Space Grid (15×15):**")
-            with st.spinner("Generating grid..."):
-                fig = plot_generated_grid(model.decoder, device, grid_size=15)
-                st.pyplot(fig)
-                plt.close(fig)
     
     # ============================================================
     # SECTION 3: Training Loss Visualization
@@ -350,7 +348,7 @@ def evaluate_on_test_set(model, test_loader, device, beta):
         for images, _ in test_loader:
             images = images.to(device)
             recon, mu, logvar = model(images)
-            losses = vae_loss(recon, images, mu, logvar, beta=beta)
+            losses = vae_loss(recon, images, mu, logvar, beta=beta, free_bits=0.5)
             total_recon += losses['reconstruction'].item()
             total_kl += losses['kl'].item()
             total_loss += losses['total'].item()

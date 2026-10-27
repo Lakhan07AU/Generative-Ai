@@ -40,22 +40,35 @@ def reconstruction_loss(recon_x: torch.Tensor, x: torch.Tensor,
 
 
 def kl_divergence(mu: torch.Tensor, logvar: torch.Tensor,
-                  reduction: str = 'mean') -> torch.Tensor:
+                  reduction: str = 'mean',
+                  free_bits: float = 0.0) -> torch.Tensor:
     """
     Compute KL divergence between q(z|x) = N(mu, sigma^2) and p(z) = N(0, I).
     
     KL = -0.5 * sum(1 + logvar - mu^2 - exp(logvar))
     
+    With free_bits > 0, a minimum KL per dimension is enforced to prevent
+    posterior collapse. This ensures the encoder must use at least free_bits
+    nats per latent dimension.
+    
     Args:
         mu: Latent mean of shape (batch_size, latent_dim)
         logvar: Latent log variance of shape (batch_size, latent_dim)
         reduction: 'mean', 'sum', or 'none'
+        free_bits: Minimum KL per dimension (0.0 = no free bits)
         
     Returns:
         KL divergence tensor
     """
-    # KL divergence for each sample in batch, summed over latent dimensions
-    kl_per_sample = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1)
+    # KL divergence for each sample, per dimension
+    kl_per_dim = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())
+    
+    if free_bits > 0:
+        # Free bits: clamp each dimension's KL to at least free_bits
+        kl_per_dim = torch.clamp(kl_per_dim, min=free_bits)
+    
+    # Sum over latent dimensions
+    kl_per_sample = torch.sum(kl_per_dim, dim=1)
     
     if reduction == 'mean':
         return kl_per_sample.mean()
@@ -68,7 +81,8 @@ def kl_divergence(mu: torch.Tensor, logvar: torch.Tensor,
 def vae_loss(recon_x: torch.Tensor, x: torch.Tensor, 
              mu: torch.Tensor, logvar: torch.Tensor,
              beta: float = 1.0,
-             reduction: str = 'mean') -> dict:
+             reduction: str = 'mean',
+             free_bits: float = 0.0) -> dict:
     """
     Compute total VAE loss = Reconstruction Loss + beta * KL Divergence.
     
@@ -79,12 +93,13 @@ def vae_loss(recon_x: torch.Tensor, x: torch.Tensor,
         logvar: Latent log variance
         beta: Weight for KL divergence term (default 1.0)
         reduction: 'mean', 'sum', or 'none'
+        free_bits: Minimum KL per dimension to prevent posterior collapse
         
     Returns:
         Dictionary with 'reconstruction', 'kl', 'total' losses
     """
     recon_loss = reconstruction_loss(recon_x, x, reduction=reduction)
-    kl_loss = kl_divergence(mu, logvar, reduction=reduction)
+    kl_loss = kl_divergence(mu, logvar, reduction=reduction, free_bits=free_bits)
     total_loss = recon_loss + beta * kl_loss
     
     return {
@@ -96,7 +111,8 @@ def vae_loss(recon_x: torch.Tensor, x: torch.Tensor,
 
 def compute_losses_per_sample(recon_x: torch.Tensor, x: torch.Tensor,
                                mu: torch.Tensor, logvar: torch.Tensor,
-                               beta: float = 1.0) -> dict:
+                               beta: float = 1.0,
+                               free_bits: float = 0.0) -> dict:
     """
     Compute losses for each sample individually (no batch reduction).
     
@@ -121,7 +137,10 @@ def compute_losses_per_sample(recon_x: torch.Tensor, x: torch.Tensor,
     recon_per_sample = F.binary_cross_entropy(recon_x, x, reduction='none').sum(dim=1)
     
     # Per-sample KL divergence (sum over latent dims)
-    kl_per_sample = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1)
+    kl_per_dim = -0.5 * (1 + logvar - mu.pow(2) - logvar.exp())
+    if free_bits > 0:
+        kl_per_dim = torch.clamp(kl_per_dim, min=free_bits)
+    kl_per_sample = torch.sum(kl_per_dim, dim=1)
     
     total_per_sample = recon_per_sample + beta * kl_per_sample
     
