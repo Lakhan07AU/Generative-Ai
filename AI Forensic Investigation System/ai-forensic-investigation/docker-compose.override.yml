@@ -1,0 +1,5 @@
+# Local override: quay.io/minio/minio now requires authentication to pull.
+# Reuse the MinIO image already present on this machine instead.
+services:
+  minio:
+    image: elestio/minio:latest

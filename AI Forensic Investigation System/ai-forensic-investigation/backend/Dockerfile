@@ -13,8 +13,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+# Install torch/torchvision from the PyTorch CPU wheel index first: on Linux
+# the default PyPI wheels are the CUDA builds and pull in multiple GB of
+# nvidia/* packages. This project runs CPU inference only (see requirements.txt).
+RUN pip install --no-cache-dir --timeout 120 --retries 8 \
+        torch==2.14.0 torchvision==0.29.0 \
+        --index-url https://download.pytorch.org/whl/cpu
 # Retry flags keep the build durable on slow/flaky PyPI connections (the
-# heavy CUDA/torch wheels frequently exceed pip's default 15s read timeout).
+# heavy wheels frequently exceed pip's default 15s read timeout).
 RUN pip install --no-cache-dir --timeout 120 --retries 8 -r requirements.txt
 
 COPY . .
