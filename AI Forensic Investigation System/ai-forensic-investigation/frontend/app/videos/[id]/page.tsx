@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Film, Box, ListOrdered, Activity, ExternalLink } from "lucide-react";
-import { api, Video, Clip, Detection, Event, ProcessingJob } from "@/lib/api";
+import { ArrowLeft, Film, Box, ListOrdered, Activity, ExternalLink, Play, Loader2 } from "lucide-react";
+import { api, Video, Clip, Detection, Event, ProcessingJob, Report } from "@/lib/api";
 import { ProtectedShell } from "@/components/protected-shell";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,15 @@ export default function VideoDetailPage({
   const [originalUrl, setOriginalUrl] = useState("");
   const [thumbUrls, setThumbUrls] = useState<Record<number, string>>({});
   const [clipUrls, setClipUrls] = useState<Record<number, string>>({});
+  const [activeMedia, setActiveMedia] = useState<{
+    url: string;
+    type: "original" | "clip";
+    clip?: Clip;
+  } | null>(null);
   const [error, setError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [report, setReport] = useState<Report | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
 
   async function loadDetail() {
     const [v, st, cl, de, ev] = await Promise.all([
@@ -44,7 +51,10 @@ export default function VideoDetailPage({
     setEvents(ev);
     if (v.status === "READY") {
       const orig = await api.originalMedia(videoId).catch(() => null);
-      if (orig) setOriginalUrl(orig.url);
+      if (orig) {
+        setOriginalUrl(orig.url);
+        setActiveMedia((prev) => (prev ? prev : { url: orig.url, type: "original" }));
+      }
     }
   }
 
@@ -58,6 +68,7 @@ export default function VideoDetailPage({
         setStatus(st);
         if (v.status === "READY") {
           loadDetail().catch(() => {});
+          clearInterval(interval);
         }
       } catch {
         /* ignore */
@@ -95,13 +106,19 @@ export default function VideoDetailPage({
     };
   }, [clips]);
 
-  const seekTo = useCallback((t?: number | null) => {
-    if (t == null) return;
-    const v = videoRef.current;
-    if (!v) return;
-    v.currentTime = t;
-    v.play().catch(() => {});
-  }, []);
+  const seekTo = useCallback(
+    (t?: number | null) => {
+      if (t == null) return;
+      if (activeMedia?.type === "clip" && originalUrl) {
+        setActiveMedia({ url: originalUrl, type: "original" });
+      }
+      const v = videoRef.current;
+      if (!v) return;
+      v.currentTime = t;
+      v.play().catch(() => {});
+    },
+    [activeMedia, originalUrl]
+  );
 
   useEffect(() => {
     if (seekParam == null) return;
@@ -115,11 +132,50 @@ export default function VideoDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seekParam, originalUrl]);
 
-  function loadClip(url: string, clipId: number) {
-    if (!videoRef.current) return;
-    videoRef.current.src = url;
-    videoRef.current.play().catch(() => {});
-    setClipUrls((prev) => ({ ...prev, [clipId]: url }));
+  async function handlePlayClip(c: Clip) {
+    let url = clipUrls[c.id];
+    if (!url) {
+      try {
+        const m = await api.clipMedia(c.id);
+        url = m.url;
+        setClipUrls((prev) => ({ ...prev, [c.id]: url }));
+      } catch (err) {
+        console.error("Failed to load clip", err);
+        return;
+      }
+    }
+    setActiveMedia({ url, type: "clip", clip: c });
+    const v = videoRef.current;
+    if (v) {
+      v.src = url;
+      v.currentTime = 0;
+      v.play().catch(() => {});
+      v.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function handlePlayOriginal() {
+    if (!originalUrl) return;
+    setActiveMedia({ url: originalUrl, type: "original" });
+    const v = videoRef.current;
+    if (v) {
+      v.src = originalUrl;
+      v.currentTime = 0;
+      v.play().catch(() => {});
+    }
+  }
+
+  async function generateVideoReport() {
+    setError("");
+    setGeneratingReport(true);
+    try {
+      const newReport = await api.generateReport(videoId);
+      setReport(newReport);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to generate report");
+    } finally {
+      setGeneratingReport(false);
+    }
   }
 
   function formatTime(sec?: number | null) {
@@ -170,7 +226,38 @@ export default function VideoDetailPage({
             <div className="flex items-center gap-3">
               <span className="text-sm text-slate-500">Status:</span>
               {statusBadge(video.status)}
-            </div>
+              {video.status === "READY" && (
+                <Button
+                  onClick={generateVideoReport}
+                  disabled={generatingReport}
+                  variant="outline"
+                  size="sm"
+                >
+                  {generatingReport ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <FileText className="h-3 w-3" />
+                  )}
+                  {" "}
+                  {generatingReport ? "Generating…" : "Generate Report"}
+                </Button>
+                {!generatingReport && report && (
+                  <Button
+                    onClick={async () => {
+                      setError("");
+                      try {
+                        await api.downloadReport(report.id, true);
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Download failed");
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <Download className="h-3 w-3" /> Download Report
+                  </Button>
+                )}
+              </div>
           </div>
 
           {isProcessing && (
@@ -220,15 +307,37 @@ export default function VideoDetailPage({
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Meta + player */}
             <Card>
-              <CardHeader>
-                <CardTitle>Video & Metadata</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    {activeMedia?.type === "clip" && activeMedia.clip ? (
+                      <>
+                        <Film className="h-5 w-5 text-accent" />
+                        Clip: {activeMedia.clip.public_id}
+                      </>
+                    ) : (
+                      "Video & Metadata"
+                    )}
+                  </CardTitle>
+                  {activeMedia?.type === "clip" && activeMedia.clip && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Segment: {formatTime(activeMedia.clip.start_time)} →{" "}
+                      {formatTime(activeMedia.clip.end_time)}
+                    </p>
+                  )}
+                </div>
+                {activeMedia?.type === "clip" && (
+                  <Button size="sm" variant="outline" onClick={handlePlayOriginal}>
+                    Full Video
+                  </Button>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <video
                   ref={videoRef}
                   controls
                   className="aspect-video w-full rounded-md border border-slate-200 bg-black"
-                  src={originalUrl || undefined}
+                  src={activeMedia?.url || originalUrl || undefined}
                 />
                 {video.status === "READY" && !originalUrl && (
                   <p className="text-sm text-slate-500">Loading video stream...</p>
@@ -268,7 +377,11 @@ export default function VideoDetailPage({
                 {clips.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center gap-3 rounded-md border border-slate-200 p-2"
+                    className={`flex items-center gap-3 rounded-md border p-2 transition-colors ${
+                      activeMedia?.type === "clip" && activeMedia.clip?.id === c.id
+                        ? "border-accent bg-accent/5"
+                        : "border-slate-200"
+                    }`}
                   >
                     {thumbUrls[c.id] ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -290,21 +403,17 @@ export default function VideoDetailPage({
                     </div>
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={async () => {
-                        if (!clipUrls[c.id]) {
-                          try {
-                            const m = await api.clipMedia(c.id);
-                            loadClip(m.url, c.id);
-                          } catch {
-                            /* ignore */
-                          }
-                        } else {
-                          loadClip(clipUrls[c.id], c.id);
-                        }
-                      }}
+                      variant={
+                        activeMedia?.type === "clip" && activeMedia.clip?.id === c.id
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => handlePlayClip(c)}
                     >
-                      <ExternalLink className="h-3 w-3" /> Play
+                      <Play className="h-3 w-3 mr-1" />
+                      {activeMedia?.type === "clip" && activeMedia.clip?.id === c.id
+                        ? "Playing"
+                        : "Play"}
                     </Button>
                   </div>
                 ))}

@@ -160,8 +160,8 @@ a structured incident report.*
 | O10 | Real network camera capture | IP camera → detections | PASS | **PASS** (572 frames, 529 processed, 0 errors) |
 | O11 | Device pairing without sharing a JWT | QR pairing | working | **PASS** (12/12 self-test checks) |
 | O12 | Honest model/device reporting | `model_info()` | real values | **PASS** — after fixing defect #16 |
-| O13 | ONVIF discovery + dedicated RTSP source | implementation | present | **NOT IMPLEMENTED** |
-| O14 | Automatic CCTV processing | implementation | present | **NOT IMPLEMENTED** |
+| O13 | Dedicated RTSP source | implementation | present | **IMPLEMENTED, VERIFIED** (`RtspCameraSource`, 8/8 transport checks) |
+| O14 | Automatic CCTV processing | implementation | present | **IMPLEMENTED, VERIFIED** (auto-process supervisor, 6/6 checks; disabled by default) |
 | O15 | Full security sweep | audit | complete | **NOT PERFORMED** |
 
 ---
@@ -204,7 +204,7 @@ deliverable, and fit with the evidence-traceability requirement.
 |---|---|---|---|
 | Frontend | Next.js + React + TypeScript + Tailwind | 14.2.5 | App-router SPA; typed API client; production build gate |
 | Backend API | FastAPI + Pydantic v2 | — | Async, typed, auto OpenAPI docs for API-first design |
-| ORM / migrations | SQLAlchemy 2.0 + Alembic | — | Versioned, reversible schema history (8 revisions) |
+| ORM / migrations | SQLAlchemy 2.0 + Alembic | — | Versioned, reversible schema history (10 revisions) |
 | Relational store | PostgreSQL | 15.19 | Authoritative record of evidence, events, runs, reviews |
 | Object storage | MinIO | RELEASE.2025-09-07 | S3-compatible; object lock for evidence immutability |
 | Vector store | Qdrant | v1.9.4 (384-dim) | Metadata-filtered hybrid retrieval |
@@ -217,7 +217,7 @@ deliverable, and fit with the evidence-traceability requirement.
 | VLM abstraction | OpenAI-compatible multimodal endpoint | — | Provider-agnostic; `simulation` mode for offline runs |
 | Report rendering | ReportLab | 4.2.5 | Deterministic PDF output |
 | ML runtime | PyTorch | 2.14.0+cu130 | Inference on CPU (`cuda` unavailable) |
-| Testing | pytest | 8.2.2 | 430 automated tests |
+| Testing | pytest | 8.2.2 | 526 collected, 524 passed |
 | Deployment | Docker + Docker Compose | — | Reproducible 5-service deployment |
 
 ---
@@ -282,7 +282,7 @@ Human review (ACCEPTED / REJECTED / MARKED_UNCERTAIN / REQUESTED_MORE_EVIDENCE)
 15-section incident report → ReportLab PDF → MinIO (versioned)
 ```
 
-### 6.3 Database schema (8 migrations, head = `0008_phase8_forensics`)
+### 6.3 Database schema (10 migrations, head = `0010_camera_pairings`)
 
 Core entities: `users` (RBAC), `cameras` (+`is_live`, `stream_status`),
 `camera_sessions`, `videos`, `clips`, `detections`, `events`,
@@ -546,7 +546,7 @@ Three independent layers are used, so that a green result means something:
 
 | Component | Status | Evidence |
 |---|---|---|
-| Phase 5 — evidence / storage | **PASS** | PostgreSQL 15.19, 10/10 tables, alembic head `0008`; MinIO PUT/GET/EXISTS + SHA-256 match, missing-object raises, corrupt bytes detected, duplicate PUT idempotent; real Qdrant insert/search/metadata-filter/negative-filter/delete, 384-dim |
+| Phase 5 — evidence / storage | **PASS** | PostgreSQL 15.19, 10/10 tables, alembic head `0010_camera_pairings`; MinIO PUT/GET/EXISTS + SHA-256 match, missing-object raises, corrupt bytes detected, duplicate PUT idempotent; real Qdrant insert/search/metadata-filter/negative-filter/delete, 384-dim |
 | Phase 6 — Video RAG | **PASS** | 103 checks, 0 failures against the live API |
 | Phase 7 — LangGraph agent | **PASS** | full graph, evidence-scoped retrieval, UNKNOWN abstention, review state machine |
 | Phase 8 — forensic analysis | **PASS** | 46 checks; timeline, verification, gaps, contradiction; real PDF via ReportLab in MinIO |
@@ -816,9 +816,9 @@ mid-session, so today's repeated capture could not be recorded as a pass.
 
 | # | Limitation | Status |
 |---|---|---|
-| 1 | ONVIF discovery | **NOT IMPLEMENTED** |
-| 2 | Dedicated `RtspCameraSource` class | **PARTIAL** — `rtsp://` accepted generically |
-| 3 | Automatic CCTV processing loop | **NOT IMPLEMENTED** — schema + API ready |
+| 1 | ONVIF discovery | **PARTIAL** — `discover_onvif_cameras.py` WS-Discovery script only; no API surface |
+| 2 | Dedicated `RtspCameraSource` class | **IMPLEMENTED, VERIFIED** — `rtsp://` accepted, 8/8 transport checks |
+| 3 | Automatic CCTV processing loop | **IMPLEMENTED, VERIFIED** — supervisor engine, 6/6 checks; disabled by default |
 | 4 | CCTV dashboard route (`/cameras`) | **NOT IMPLEMENTED** |
 | 5 | Full security sweep | **NOT PERFORMED** |
 | 6 | `FINAL_CERTIFICATION_REPORT.md` | **DOES NOT EXIST** — required final deliverable |
@@ -944,9 +944,9 @@ end-to-end verification passing, a 196-check demo dataset verification passing,
 and a **real network camera proven from capture through YOLO processing**.
 
 Equally, the report's value lies in what it does **not** claim. The system is
-reported as **NOT READY FOR CERTIFICATION** because ONVIF discovery, a dedicated
-RTSP source, automatic CCTV processing and a CCTV dashboard are not implemented,
-and the full security sweep has not been performed. The real VLM provider has not
+reported as **NOT READY FOR CERTIFICATION** because ONVIF discovery is script-only
+(no API), a CCTV dashboard route is missing, and
+the full security sweep has not been performed. The real VLM provider has not
 been run. Detection and tracking accuracy have not been measured. No published
 accuracy figure is offered, because no benchmark has yet been authored. Two
 automated tests are recorded as **environment-blocked** rather than passed. The

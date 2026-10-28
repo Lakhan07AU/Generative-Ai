@@ -1256,6 +1256,11 @@ export const api = {
   clips: (id: number) => request<Clip[]>(`/videos/${id}/clips`),
   detections: (id: number) => request<Detection[]>(`/videos/${id}/detections`),
   events: (id: number) => request<Event[]>(`/videos/${id}/events`),
+  generateVideoReport: (id: number, title?: string) =>
+    request<ReportDetail>(`/videos/${id}/report/generate`, {
+      method: "POST",
+      body: JSON.stringify(title ? { title } : {}),
+    }),
 
   clipMedia: (clipId: number) => request<MedialUrl>(`/media/clips/${clipId}`),
   thumbnailMedia: (clipId: number) => request<MedialUrl>(`/media/thumbnails/${clipId}`),
@@ -1382,6 +1387,37 @@ export const api = {
   reportAudit: (id: number) => request<ReportAuditEntry[]>(`/reports/${id}/audit`),
   reportFileUrl: (id: number, download = false) =>
     `${API_URL}/reports/${id}/file?download=${download}`,
+  downloadReport: async (id: number, download = true): Promise<string> => {
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}/reports/${id}/file?download=${download}`, {
+      headers,
+    });
+    if (!res.ok) {
+      let detail = res.statusText;
+      try {
+        const body = await res.json();
+        detail = body.detail || detail;
+      } catch {
+        /* ignore */
+      }
+      throw new ApiError(res.status, detail);
+    }
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    const filename = match ? match[1] : `report-${id}.bin`;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return url;
+  },
 
   // ---- Phase 9: Audit log ----
 
@@ -1507,6 +1543,11 @@ export const api = {
       }
     );
   },
+  generateLiveReport: (cameraId: number, title?: string) =>
+    request<ReportDetail>(`/live/cameras/${cameraId}/report/generate`, {
+      method: "POST",
+      body: JSON.stringify(title ? { title } : {}),
+    }),
 
   // ---- Phase 6: Grounded investigation search ----
 

@@ -83,7 +83,11 @@ class LocalStorageService:
         return True
 
     def presigned_url(self, storage_path: str, expires_seconds: int = 3600) -> str:
-        return storage_path
+        # Local storage has no standalone HTTP endpoint for objects; callers
+        # should use the backend /media/*/file proxies instead. Return a
+        # file:// URL so the result is at least a valid URL rather than a raw
+        # storage path.
+        return f"file://{os.path.join(self.base_dir, storage_path)}"
 
     def backend_name(self) -> str:
         return "local"
